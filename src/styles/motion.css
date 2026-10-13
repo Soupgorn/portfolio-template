@@ -1,0 +1,145 @@
+/* One existing .page-shell background spans both states. These rules affect foregrounds only. */
+.entry-pending { overflow: hidden; }
+.welcome-screen { display: none; }
+[data-entry="welcome"] .page-content { visibility: hidden; pointer-events: none; }
+[data-entry] .welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+[data-entry="entered"] .welcome-screen { display: none; }
+.welcome-content { display: flex; flex-direction: column; align-items: center; gap: 28px; text-align: center; }
+.welcome-heading {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: clamp(64px, 11vw, 104px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -.05em;
+}
+[data-entry] .welcome-heading { animation: welcome-heading-in 700ms cubic-bezier(.22, 1, .36, 1) both; }
+[data-entry] .welcome-button-reveal { animation: welcome-button-in 450ms cubic-bezier(.22, 1, .36, 1) 250ms both; }
+.enter-button {
+  width: auto;
+  height: auto;
+  min-height: 48px;
+  padding: 13px 24px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.5;
+  transition: transform 200ms ease, background-color 200ms ease;
+}
+.enter-button span { transition: transform 200ms ease; }
+.enter-button:disabled { background: var(--color-signature-green); color: var(--color-cream); box-shadow: 0 4px 12px color-mix(in srgb, var(--color-signature-green) 12%, transparent); }
+[data-entry="exiting"] .welcome-content { animation: welcome-out 480ms cubic-bezier(.22, 1, .36, 1) both; }
+.page-content:focus { outline: none; }
+
+/* Set once on click and cleared after the final stagger; interactions cannot replay entrances. */
+.entry-reveal .split-card { animation: card-in 650ms cubic-bezier(.22, 1, .36, 1) 300ms both; }
+.entry-reveal :is(.intro-label, #profile-name, .tagline, .contacts > .eyebrow, .contact-note, .page-signoff) {
+  animation: content-in var(--reveal-duration, 450ms) cubic-bezier(.22, 1, .36, 1) var(--reveal-delay, 450ms) both;
+}
+.entry-reveal .intro-label { --reveal-delay: 450ms; }
+.entry-reveal #profile-name { --reveal-delay: 530ms; --reveal-duration: 540ms; --reveal-distance: 12px; }
+.entry-reveal .tagline { --reveal-delay: 650ms; --reveal-duration: 470ms; }
+.entry-reveal .profile-rule { transform-origin: left center; animation: divider-in 400ms cubic-bezier(.22, 1, .36, 1) 690ms both; }
+.entry-reveal .contacts > .eyebrow { --reveal-delay: 700ms; --reveal-duration: 400ms; }
+.entry-reveal .contact-note { --reveal-delay: 1030ms; --reveal-duration: 400ms; }
+.entry-reveal .contact-grid > li { animation: content-in 400ms cubic-bezier(.22, 1, .36, 1) calc(750ms + var(--contact-index, 0) * 70ms) both; --reveal-distance: 10px; }
+.entry-reveal .page-signoff { --reveal-delay: 1030ms; --reveal-duration: 400ms; }
+
+/* Hover transforms live on inner elements, independently of entrance wrappers. */
+a.contact-link:active { transform: scale(.97); transition-duration: 120ms; }
+.play-button:not(:disabled):active { transform: scale(.94); transition-duration: 120ms; }
+.welcome-screen .enter-button:not(:disabled):active { transform: scale(.96); transition-duration: 120ms; }
+@media (hover: hover) {
+  a.contact-link:hover { transform: translateY(-3px); }
+  a.contact-link:hover > .contact-arrow { transform: translate(2px, -2px); }
+  .play-button:not(:disabled):hover { transform: scale(1.05); }
+  .welcome-screen .enter-button:not(:disabled):hover { transform: scale(1.04); background: var(--color-ink); }
+  .enter-button:hover span { transform: translateX(3px); }
+  a.contact-link:active { transform: scale(.97); }
+  .play-button:not(:disabled):active { transform: scale(.94); }
+  .welcome-screen .enter-button:not(:disabled):active { transform: scale(.96); }
+}
+
+/* Three soft surfaces share the approved static page gradient. No blur/filter animation. */
+.ambient-system { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.ambient {
+  translate: calc(var(--pointer-x, 0px) * var(--parallax-depth, 0)) calc(var(--pointer-y, 0px) * var(--parallax-depth, 0));
+}
+.ambient-one {
+  --parallax-depth: .42857;
+  background: radial-gradient(ellipse at 45% 60%, color-mix(in srgb, var(--color-signature-green) 12%, transparent), color-mix(in srgb, var(--color-soft-green) 65%, transparent) 38%, transparent 72%);
+  animation: ambient-one-drift 16s ease-in-out infinite alternate;
+  animation-delay: -3s;
+}
+.ambient-two {
+  --parallax-depth: .71429;
+  background: radial-gradient(ellipse at 55% 23%, color-mix(in srgb, var(--color-soft-green) 70%, transparent), color-mix(in srgb, var(--color-cream) 65%, transparent) 42%, transparent 74%);
+  animation: ambient-two-drift 22s ease-in-out infinite alternate;
+  animation-delay: -7s;
+}
+.ambient-three {
+  --parallax-depth: 1;
+  width: clamp(300px, 34vw, 460px);
+  height: 400px;
+  top: 32%;
+  left: -235px;
+  border: 0;
+  border-radius: 58% 42% 38% 62%;
+  background: radial-gradient(ellipse at 56% 48%, color-mix(in srgb, var(--color-red) 6%, transparent), color-mix(in srgb, var(--color-cream) 45%, transparent) 36%, transparent 70%);
+  animation: ambient-three-drift 28s ease-in-out infinite alternate;
+  animation-delay: -11s;
+}
+@keyframes ambient-one-drift { from { transform: translate(0, 0); } to { transform: translate(30px, -45px); } }
+@keyframes ambient-two-drift { from { transform: translate(0, 0); } to { transform: translate(-40px, 35px); } }
+@keyframes ambient-three-drift { from { transform: translate(0, 0); opacity: .7; } to { transform: translate(18px, 20px); opacity: 1; } }
+
+/* Inner idle wrappers leave one-shot entrance and hover transforms independent. */
+.welcome-title-idle, .hero-name-idle { display: block; }
+[data-entry] .welcome-title-idle { animation: welcome-idle 4.5s ease-in-out 700ms infinite alternate; }
+[data-entry] .welcome-button-idle { animation: button-breathe 3s ease-in-out 700ms infinite alternate; }
+.welcome-screen[hidden] :is(.welcome-title-idle, .welcome-button-idle) { animation: none; }
+:root:is([data-entry="entered"], :not([data-entry])) .hero-name-idle {
+  transform-origin: left center;
+  animation: name-breathe 5.2s ease-in-out infinite alternate;
+}
+:root:is([data-entry="entered"], :not([data-entry])) .hero-eyebrow-idle { animation: eyebrow-breathe 5.8s ease-in-out infinite alternate; }
+:root:is([data-entry="entered"], :not([data-entry])) .profile-rule svg { transform-origin: center; transform-box: fill-box; animation: accent-idle 4.2s ease-in-out infinite alternate; }
+@media (hover: hover) {
+  .welcome-button-idle:has(.enter-button:hover, .enter-button:focus-visible) { animation-play-state: paused; }
+}
+@keyframes welcome-idle { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+@keyframes button-breathe { from { transform: scale(1); } to { transform: scale(1.02); } }
+@keyframes name-breathe { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+@keyframes eyebrow-breathe { from { opacity: 1; } to { opacity: .97; } }
+@keyframes accent-idle { from { transform: rotate(0deg); } to { transform: rotate(6deg); } }
+:root[data-motion-paused] :is(.ambient, .welcome-title-idle, .welcome-button-idle, .hero-name-idle, .hero-eyebrow-idle, .profile-rule svg) { animation-play-state: paused !important; }
+@keyframes welcome-heading-in { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes welcome-button-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes welcome-out { to { opacity: 0; transform: translateY(-12px) scale(.99); } }
+@keyframes card-in { from { opacity: 0; transform: translateY(16px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes content-in { from { opacity: 0; transform: translateY(var(--reveal-distance, 8px)); } to { opacity: 1; transform: translateY(0); } }
+@keyframes divider-in { from { opacity: 0; transform: scaleX(0); } to { opacity: 1; transform: scaleX(1); } }
+
+@media (max-width: 639px) {
+  .entry-reveal .profile-rule { transform-origin: center; }
+  :root:is([data-entry="entered"], :not([data-entry])) .hero-name-idle { transform-origin: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .ambient { translate: none; }
+  a.contact-link:hover, a.contact-link:active,
+  a.contact-link:hover > .contact-arrow,
+  .play-button:not(:disabled):hover, .play-button:not(:disabled):active,
+  .welcome-screen .enter-button:not(:disabled):hover, .welcome-screen .enter-button:not(:disabled):active,
+  .enter-button:hover span { transform: none; }
+}

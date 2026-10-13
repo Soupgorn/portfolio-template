@@ -1,0 +1,90 @@
+<!-- A shared, non-interactive layer; entry changes never replace or restart it. -->
+<div class="ambient-system" aria-hidden="true" data-ambient>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <div class="ambient ambient-three"></div>
+</div>
+
+<script>
+  import '../scripts/ambient';
+</script>
+
+<style>
+  /* Background-only colors: the foreground's approved palette remains unchanged. */
+  .ambient-system {
+    --ambient-green-a: #B9D9BD;
+    --ambient-green-b: #B4D6C1;
+    --ambient-warm: #F0E3C5;
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    contain: paint;
+  }
+
+  .ambient {
+    border: 0;
+    border-radius: 47% 53% 62% 38%;
+    /* Individual translate composes with the independent keyframed transform. */
+    translate: calc(var(--pointer-x, 0px) * var(--parallax-depth)) calc(var(--pointer-y, 0px) * var(--parallax-depth));
+  }
+
+  .ambient-one {
+    --parallax-depth: .333333;
+    width: clamp(440px, 56vw, 740px);
+    height: clamp(440px, 50vw, 680px);
+    top: -90px;
+    left: clamp(-120px, -7vw, -36px);
+    right: auto;
+    bottom: auto;
+    background: radial-gradient(ellipse at 44% 48%, var(--ambient-green-a) 0%, color-mix(in srgb, var(--ambient-green-a) 88%, transparent) 28%, color-mix(in srgb, var(--color-soft-green) 70%, transparent) 56%, transparent 78%);
+    animation: visible-ambient-a 18s ease-in-out -4.5s infinite alternate;
+  }
+
+  .ambient-two {
+    --parallax-depth: .666667;
+    width: clamp(460px, 54vw, 760px);
+    height: clamp(440px, 48vw, 660px);
+    right: -110px;
+    bottom: -120px;
+    top: auto;
+    left: auto;
+    background: radial-gradient(ellipse at 50% 50%, var(--ambient-green-b) 0%, color-mix(in srgb, var(--ambient-green-b) 88%, transparent) 30%, color-mix(in srgb, var(--color-soft-green) 70%, transparent) 55%, transparent 77%);
+    animation: visible-ambient-b 22s ease-in-out -6s infinite alternate;
+  }
+
+  .ambient-three {
+    --parallax-depth: 1;
+    width: clamp(360px, 42vw, 580px);
+    height: clamp(360px, 38vw, 520px);
+    left: -80px;
+    bottom: -75px;
+    top: auto;
+    right: auto;
+    opacity: .72;
+    background: radial-gradient(ellipse at 48% 46%, var(--ambient-warm) 0%, color-mix(in srgb, var(--ambient-warm) 78%, transparent) 30%, color-mix(in srgb, var(--color-soft-green) 45%, transparent) 58%, transparent 78%);
+    animation: visible-ambient-c 16s ease-in-out -3s infinite alternate;
+  }
+
+  @keyframes visible-ambient-a {
+    from { transform: translate(0, 0); }
+    to { transform: translate(70px, -80px); }
+  }
+  @keyframes visible-ambient-b {
+    from { transform: translate(0, 0); }
+    to { transform: translate(-90px, 65px); }
+  }
+  @keyframes visible-ambient-c {
+    from { transform: translate(0, 0); opacity: .62; }
+    to { transform: translate(45px, 55px); opacity: .84; }
+  }
+
+  @media (max-width: 639px) {
+    .ambient-one { width: 440px; height: 430px; left: -190px; top: -100px; }
+    .ambient-two { width: 440px; height: 500px; right: -205px; bottom: -115px; }
+    .ambient-three { width: 340px; height: 360px; left: -135px; bottom: -65px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ambient { animation: none !important; transform: none; translate: none; }
+  }
+</style>

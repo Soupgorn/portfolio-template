@@ -1,0 +1,40 @@
+# Dependencies, build output, caches, and local hosting configuration
+node_modules/
+dist/
+.astro/
+.vite/
+.cache/
+.vercel/
+*.tsbuildinfo
+
+# Secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local diagnostics and temporary files
+*.log
+*.zip
+playwright-report/
+test-results/
+/tmp/
+/temp/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Do not accidentally publish personal media. Review before making an exception.
+/public/audio/
+*.mp3
+*.wav
+*.m4a
+*.ogg
+*.flac
+/public/images/*
+!/public/images/avatar.svg
+!/public/images/favicon.svg

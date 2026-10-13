@@ -1,0 +1,70 @@
+---
+import { site, type Contact } from '../data/site';
+import Icon from './Icon.astro';
+
+// Keep accidental placeholder, relative, and unsafe URLs from becoming active links.
+function isConfigured(contact: Contact): boolean {
+  if (!contact.href) return false;
+  if (contact.platform === 'email') return /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(contact.href);
+  try {
+    const url = new URL(contact.href);
+    return url.protocol === 'https:' && !url.username && !url.password;
+  } catch { return false; }
+}
+---
+<footer class="contacts" aria-labelledby="contact-heading">
+  <div class="contact-copy">
+    <h2 id="contact-heading" class="eyebrow">{site.contactLabel}</h2>
+    <p class="contact-tagline">{site.contactTagline}</p>
+  </div>
+  <ul class="contact-grid" role="list">
+    {site.contacts.map((contact, index) => (
+      <li class="contact-item" style={`--contact-index: ${index}`}>
+        {isConfigured(contact) ? (
+          <a class="contact-link" href={contact.href} target={contact.platform === 'email' ? undefined : '_blank'} rel={contact.platform === 'email' ? undefined : 'noopener noreferrer'} aria-label={`${contact.label}${contact.platform === 'email' ? '' : ' (opens in a new tab)'}`}>
+            <Icon name={contact.platform} size={21} />
+          </a>
+        ) : (
+          <span class="contact-link contact-disabled" role="link" aria-disabled="true" aria-label={`${contact.label} (not configured)`}>
+            <Icon name={contact.platform} size={21} />
+          </span>
+        )}
+        <span class="contact-tooltip" aria-hidden="true">{contact.label}{!isConfigured(contact) && <small>Not configured</small>}</span>
+      </li>
+    ))}
+  </ul>
+  {site.contacts.every((contact) => !isConfigured(contact)) && <p class="sr-only">{site.contactPendingNote}</p>}
+</footer>
+
+<script>
+  const items = document.querySelectorAll<HTMLElement>('.contact-item');
+  const dismiss = (item: HTMLElement) => {
+    item.dataset.tooltipDismissed = 'true';
+    delete item.dataset.tooltipFocused;
+  };
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') items.forEach((item) => { if (item.matches(':hover, :focus-within')) dismiss(item); });
+  });
+
+  items.forEach((item) => {
+    item.addEventListener('pointerenter', () => { delete item.dataset.tooltipDismissed; });
+    item.addEventListener('pointerleave', () => { delete item.dataset.tooltipDismissed; });
+    item.addEventListener('pointerdown', () => { delete item.dataset.tooltipFocused; });
+    item.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.closest('.contact-link')) dismiss(item);
+      // Leave native link navigation and target behavior untouched.
+    });
+    item.addEventListener('focusin', (event) => {
+      if (event.target instanceof Element && event.target.matches('.contact-link:focus-visible')) {
+        delete item.dataset.tooltipDismissed;
+        item.dataset.tooltipFocused = 'true';
+      }
+    });
+    item.addEventListener('focusout', () => {
+      delete item.dataset.tooltipFocused;
+      // Opening a new tab can blur the link while the pointer is still over it.
+      // Only a new hover/focus session resets a click dismissal.
+    });
+  });
+</script>

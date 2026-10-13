@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+import ProfileCard from '../components/ProfileCard.astro';
+import MusicPlayer from '../components/MusicPlayer.astro';
+import WelcomeScreen from '../components/WelcomeScreen.astro';
+import AmbientBackground from '../components/AmbientBackground.astro';
+import ContactLinks from '../components/ContactLinks.astro';
+import ProfileDetails from '../components/ProfileDetails.astro';
+import { site } from '../data/site';
+---
+<Layout>
+  <main class="page-shell grid place-items-center">
+    <AmbientBackground />
+    <WelcomeScreen />
+    <div class="page-content" id="contact-page" data-contact tabindex="-1" role="region" aria-label="Personal contact and music">
+      <div class="split-card grid">
+        <header class="card-heading"><p class="eyebrow">{site.personalSpaceLabel}</p><span aria-hidden="true">✦</span></header>
+        <ProfileCard />
+        <ContactLinks />
+        <MusicPlayer />
+        <ProfileDetails />
+      </div>
+      <p class="page-signoff" aria-hidden="true"><span></span> a small corner, a softer pace <span>✦</span></p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import '../scripts/entry';
+</script>

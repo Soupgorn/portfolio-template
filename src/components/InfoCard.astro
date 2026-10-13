@@ -1,0 +1,22 @@
+---
+import type { InfoCardData } from '../data/site';
+import Icon from './Icon.astro';
+interface Props { info: InfoCardData; index: number; }
+const { info, index } = Astro.props;
+---
+<article class="info-card" data-info={info.id} style={`--info-index: ${index}`}>
+  <Icon name={info.icon} size={21} />
+  <h2>{info.heading}</h2>
+  <div class="info-content">
+    {info.badges?.length ? (
+      <ul class="info-badges" role="list" aria-label={`${info.heading} tags`}>
+        {info.badges.map((badge) => <li class="info-badge">{badge}</li>)}
+      </ul>
+    ) : (
+      <>
+        {info.primary && <p class="info-primary">{info.primary}</p>}
+        {info.secondary && <p class="info-secondary">{info.secondary}</p>}
+      </>
+    )}
+  </div>
+</article>

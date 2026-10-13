@@ -1,0 +1,49 @@
+---
+import { site } from '../data/site';
+import { assetUrl } from '../lib/assets';
+import headingFont from '../assets/fonts/space-grotesk-latin.woff2?url';
+import bodyFont from '../assets/fonts/inter-latin.woff2?url';
+import '../styles/fonts.css';
+import '../styles/global.css';
+import '../styles/motion.css';
+// Foreground refinements load last without replacing the approved background styles.
+import '../styles/portfolio.css';
+import '../styles/card-interactions.css';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      // Hide only foreground content before first paint. Without JS, the page stays accessible.
+      (() => {
+        const root = document.documentElement;
+        root.dataset.entry = 'welcome';
+        root.classList.add('entry-pending');
+        // Fail open if the interaction module cannot load; never strand visitors at the gate.
+        const recovery = window.setTimeout(() => {
+          root.removeAttribute('data-entry');
+          root.classList.remove('entry-pending');
+          const contact = document.querySelector('[data-contact]');
+          contact?.removeAttribute('inert');
+          contact?.removeAttribute('aria-hidden');
+          const welcome = document.querySelector('[data-welcome]');
+          if (welcome) welcome.hidden = true;
+        }, 5000);
+        document.addEventListener('entry:ready', () => window.clearTimeout(recovery), { once: true });
+      })();
+    </script>
+    <meta name="description" content={site.seo.description} />
+    <meta name="theme-color" content="#F8F4E8" />
+    <link rel="preload" href={headingFont} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={bodyFont} as="font" type="font/woff2" crossorigin="anonymous" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={site.seo.title} />
+    <meta property="og:description" content={site.seo.description} />
+    {site.seo.url && <link rel="canonical" href={site.seo.url} />}
+    <link rel="icon" href={assetUrl('/images/favicon.svg')} type="image/svg+xml" />
+    <title>{site.seo.title}</title>
+  </head>
+  <body><slot /></body>
+</html>

@@ -1,0 +1,58 @@
+/* Motion inside the card only; shared background and music styles are untouched. */
+.profile-photo, .soft-terminal { position: relative; }
+.border-highlight {
+  position: absolute;
+  inset: 0;
+  padding: 1.5px;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.border-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: conic-gradient(transparent 0deg 260deg, color-mix(in srgb, var(--color-signature-green) 22%, transparent) 285deg, color-mix(in srgb, var(--color-signature-green) 62%, transparent) 310deg, transparent 360deg);
+  animation: border-orbit var(--border-cycle, 8s) linear infinite;
+  animation-play-state: paused;
+}
+.soft-terminal { --border-cycle: 10s; }
+.profile-photo img { transition: transform 250ms ease-out; }
+.terminal-footer { margin: 10px 0 0; font-family: var(--font-label); font-size: 10px; line-height: 1.5; color: var(--color-muted); }
+.terminal-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  margin-left: 5px;
+  vertical-align: -2px;
+  background: var(--color-red);
+  animation: terminal-cursor 900ms steps(1, end) infinite;
+  animation-play-state: paused;
+}
+.info-card { transition: transform 220ms ease-out, border-color 220ms ease-out; }
+.info-card > svg { transform-origin: center; transition: transform 220ms ease-out; }
+:root:is([data-entry="entered"], :not([data-entry])) :is(.border-orbit, .terminal-cursor) { animation-play-state: running; }
+:root:is([data-entry="entered"], :not([data-entry])) .intro-label::before { animation: tiny-dot-pulse 5.6s ease-in-out infinite alternate; }
+:root:is([data-entry="entered"], :not([data-entry])) .card-heading > span { animation: tiny-sparkle-pulse 4.8s ease-in-out -1.2s infinite alternate; }
+:root[data-motion-paused] :is(.border-orbit, .terminal-cursor, .card-heading > span),
+:root[data-motion-paused] .intro-label::before { animation-play-state: paused !important; }
+@media (hover: hover) and (pointer: fine) {
+  .profile-photo:hover img { transform: scale(1.025); }
+  .info-card:hover { transform: translateY(-3px); border-color: var(--stroke-strong); }
+  .info-card:hover > svg { transform: scale(1.08); }
+}
+@keyframes border-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes terminal-cursor { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes tiny-dot-pulse { from { opacity: 1; transform: scale(1); } to { opacity: .82; transform: scale(1.1); } }
+@keyframes tiny-sparkle-pulse { from { opacity: 1; transform: scale(1); } to { opacity: .85; transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) {
+  .profile-photo:hover img, .info-card:hover, .info-card:hover > svg { transform: none; }
+  .terminal-cursor { opacity: 1; }
+}

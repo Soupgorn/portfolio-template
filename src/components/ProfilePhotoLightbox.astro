@@ -1,0 +1,114 @@
+---
+import { site } from '../data/site';
+import { assetUrl, hasPublicAsset } from '../lib/assets';
+import Icon from './Icon.astro';
+import BorderHighlight from './BorderHighlight.astro';
+
+const photoAvailable = hasPublicAsset(site.photo);
+const fullPhoto = site.photoFull && hasPublicAsset(site.photoFull) ? site.photoFull : site.photo;
+---
+
+<button
+  class="profile-photo"
+  type="button"
+  aria-label="View larger profile photo"
+  aria-haspopup="dialog"
+  aria-controls="profile-photo-dialog"
+  aria-expanded="false"
+  disabled
+  data-photo
+>
+  {photoAvailable && <img src={assetUrl(site.photo)} alt={site.photoAlt} width="288" height="288" decoding="async" fetchpriority="high" data-photo-image />}
+  <span class="photo-placeholder" role="img" aria-label="Personal photo placeholder" hidden={photoAvailable} data-photo-placeholder><Icon name="person" size={38} /></span>
+  <BorderHighlight />
+</button>
+
+<dialog class="photo-lightbox" id="profile-photo-dialog" aria-label="Profile photo" data-photo-dialog>
+  <button class="photo-close" type="button" aria-label="Close photo" autofocus data-photo-close>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+  </button>
+  {photoAvailable && <img class="photo-expanded" alt={site.photoAlt} decoding="async" data-photo-expanded data-full-src={assetUrl(fullPhoto)} />}
+</dialog>
+
+<style>
+  /* Reset only native button defaults; the approved frame and hover styles remain shared. */
+  .profile-photo { display: block; width: 100%; min-width: 0; padding: 0; color: inherit; text-align: inherit; }
+  .profile-photo:disabled { cursor: default; }
+  @media (hover: hover) { .profile-photo:not(:disabled) { cursor: pointer; } }
+
+  .photo-lightbox {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--color-cream);
+    overflow: hidden;
+    overscroll-behavior: contain;
+    --photo-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .photo-lightbox[open] { display: grid; place-items: center; }
+  .photo-lightbox::backdrop {
+    background: rgba(18, 35, 26, 0.80);
+    /* ::backdrop does not inherit the dialog's custom properties. */
+    animation: photo-overlay-in 250ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .photo-expanded {
+    display: block;
+    width: min(85vw, calc(85vh * var(--photo-ratio, 1)));
+    height: auto;
+    max-width: 85vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+    animation: photo-zoom-in 300ms var(--photo-easing) both;
+  }
+  .photo-close {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(18, 35, 26, 0.35);
+    color: var(--color-cream);
+    transition: background-color 150ms ease;
+  }
+  .photo-close:focus-visible { outline: 3px solid var(--color-cream); outline-offset: 4px; }
+  @media (hover: hover) { .photo-close:hover { background: rgba(248, 244, 232, 0.14); } }
+  .photo-lightbox[data-closing]::backdrop { animation: photo-overlay-out 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .photo-lightbox[data-closing] .photo-expanded { animation: photo-zoom-out 220ms var(--photo-easing) both; }
+  @media (max-width: 639px) {
+    .photo-expanded {
+      width: min(92vw, calc(80vh * var(--photo-ratio, 1)));
+      width: min(92vw, calc(80dvh * var(--photo-ratio, 1)));
+      max-width: 92vw;
+      max-height: 80vh;
+      max-height: 80dvh;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .photo-lightbox::backdrop, .photo-expanded { animation: none !important; }
+    .photo-close { transition: none; }
+  }
+  @keyframes photo-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes photo-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes photo-zoom-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+  @keyframes photo-zoom-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.96); } }
+</style>
+
+<script>
+  import '../scripts/profile-photo';
+</script>

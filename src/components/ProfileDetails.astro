@@ -1,0 +1,16 @@
+---
+import { site } from '../data/site';
+import InfoCard from './InfoCard.astro';
+import BorderHighlight from './BorderHighlight.astro';
+---
+<div class="profile-details">
+  <blockquote class="quote-panel soft-terminal">
+    <p class="quote-label">{site.quote.label}</p>
+    <p class="quote-text">{site.quote.text}<span class="terminal-cursor" aria-hidden="true"></span></p>
+    <p class="terminal-footer">{site.quote.footer}</p>
+    <BorderHighlight />
+  </blockquote>
+  <section class="info-cards" aria-label="Personal information">
+    {site.information.map((info, index) => <InfoCard info={info} index={index} />)}
+  </section>
+</div>

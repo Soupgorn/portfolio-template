@@ -1,0 +1,22 @@
+<section class="welcome-screen" aria-labelledby="welcome-heading" data-welcome>
+  <div class="welcome-content" data-welcome-content>
+    <h1 class="welcome-heading" id="welcome-heading" aria-label="welcome."><span class="welcome-word" aria-hidden="true"><span>welcome</span><span class="welcome-period">.</span></span></h1>
+    <div class="welcome-button-reveal">
+      <div class="welcome-button-idle">
+        <button class="play-button enter-button" type="button" data-enter>Enter my space <span aria-hidden="true">→</span></button>
+      </div>
+      <noscript>
+        <style>
+          .welcome-screen { display: grid; position: relative; min-height: 50svh; padding: 32px 0; margin-bottom: 32px; place-items: center; }
+          .welcome-button-idle { display: none; }
+          .welcome-button-reveal > noscript { display: block; }
+          .welcome-screen a.enter-button { position: relative; z-index: 1; }
+          .page-shell { display: block; }
+          .page-content { margin-inline: auto; }
+          .enter-button { text-decoration: none; }
+        </style>
+        <a class="play-button enter-button" href="#contact-page">Enter my space <span aria-hidden="true">→</span></a>
+      </noscript>
+    </div>
+  </div>
+</section>
