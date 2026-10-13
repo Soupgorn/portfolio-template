@@ -1,6 +1,7 @@
 ---
 import Icon from './Icon.astro';
 import { site } from '../data/site';
+const noteLines = site.music.tagline.match(/^(.*?)\s+(to .*)$/);
 ---
 <section class="music" aria-labelledby="music-heading" data-now-playing data-spotify-enabled={String(site.music.enabled)}>
   <div class="music-heading flex items-center justify-between">
@@ -8,10 +9,10 @@ import { site } from '../data/site';
     <div class="equalizer flex items-end gap-1" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   </div>
   <div class="music-container">
-    <div class="live-card" data-live-card data-status={site.music.enabled ? 'unavailable' : 'offline'}>
+    <div class="live-card" data-live-card data-status={site.music.enabled ? 'unavailable' : 'unconfigured'}>
       <div class="live-topline">
         <p class="eyebrow">Now playing</p>
-        <span class="listening-status" data-status-label role="status"><span class="live-dot" aria-hidden="true"></span><span data-status-text>{site.music.enabled ? 'UNAVAILABLE' : 'OFFLINE'}</span></span>
+        <span class="listening-status" data-status-label role="status"><span class="live-dot" aria-hidden="true"></span><span data-status-text>{site.music.enabled ? 'UNAVAILABLE' : 'UNCONFIGURED'}</span></span>
       </div>
       <div class="track-stage" data-track-stage>
         <div class="track-layer" data-track-layer>
@@ -20,17 +21,18 @@ import { site } from '../data/site';
             <img data-artwork hidden alt="" width="120" height="120" referrerpolicy="no-referrer" />
           </div>
           <div class="track-copy">
-            <h3 data-track-title>A quiet moment</h3>
-            <p class="track-artist" data-track-artist>{site.music.enabled ? 'Listening status is unavailable.' : 'Your soundtrack starts here.'}</p>
+            <h3 data-track-title>{site.music.enabled ? 'Spotify is taking a break.' : 'Your soundtrack starts here.'}</h3>
+            <p class="track-artist" data-track-artist>{site.music.enabled ? 'please try again later.' : 'Connect Spotify when you’re ready.'}</p>
             <p class="track-album" data-track-album>&nbsp;</p>
           </div>
         </div>
       </div>
+      <p class="activity-detail" data-activity-detail>{site.music.enabled ? 'Activity unavailable' : 'Optional Spotify activity'}</p>
       <div class="progress-space">
         <div class="playback-progress" data-progress hidden>
           <div class="progress-track" role="progressbar" aria-label="Approximate track progress" aria-valuemin="0" aria-valuemax="100" data-progress-bar><span data-progress-fill></span></div>
           <div class="progress-times"><span data-elapsed>0:00</span><span data-duration>0:00</span></div>
-          <p class="progress-hint">approximate · updated every 30s</p>
+          <p class="progress-hint">read-only · near real-time</p>
         </div>
       </div>
       <div class="spotify-footer">
@@ -44,7 +46,7 @@ import { site } from '../data/site';
     <svg class="headphone-icon" xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M3 14v-3a9 9 0 0 1 18 0v3" /><rect x="3" y="12" width="4" height="8" rx="2" /><rect x="17" y="12" width="4" height="8" rx="2" />
     </svg>
-    <p>{site.music.tagline}</p>
+    <p>{noteLines ? <>{noteLines[1]}<br />{noteLines[2]}</> : site.music.tagline}</p>
     <div class="music-dots" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   </aside>
 </section>
@@ -61,6 +63,11 @@ import { site } from '../data/site';
   .live-dot { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: #bdcdbb; }
   .live-card[data-status="playing"] .listening-status { color: #bde8aa; }
   .live-card[data-status="playing"] .live-dot { background: #a8dc8b; animation: live-pulse 4.5s ease-in-out infinite; }
+  .live-card[data-status="paused"] .listening-status { color: #e3ce8d; }
+  .live-card[data-status="paused"] .live-dot { background: #d7bd73; }
+  .activity-detail { min-height: 16px; margin: 12px 0 0; text-align: center; color: #c2d1bd; font: 10px var(--font-label); }
+  .equalizer { visibility: hidden; }
+  .music[data-playback-status="playing"] .equalizer { visibility: visible; }
   .track-stage { display: grid; min-width: 0; }
   .track-stage > :global(.track-layer) { grid-area: 1 / 1; min-width: 0; text-align: center; }
   .artwork-frame { position: relative; display: grid; place-items: center; width: 120px; height: 120px; margin: 0 auto 20px; border: 1px solid #526c57; border-radius: 12px; overflow: hidden; background: #203c2e; color: #a6ba9d; }
@@ -72,6 +79,7 @@ import { site } from '../data/site';
   .progress-space { height: 70px; padding-top: 18px; }
   .progress-track { height: 3px; overflow: hidden; border-radius: 8px; background: #456047; }
   .progress-track span { display: block; height: 100%; width: 0; border-radius: inherit; background: #b5d39c; }
+  .live-card[data-status="playing"] [data-progress-fill] { transition: width 250ms linear; }
   .progress-times { display: flex; justify-content: space-between; margin-top: 7px; color: #c2d1bd; font: 9px var(--font-label); }
   .progress-hint { margin: 6px 0 0; font: 8px var(--font-label); color: #a7bda3; text-align: center; }
   .spotify-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; min-height: 45px; border-top: 1px solid #36513b; }
@@ -97,5 +105,5 @@ import { site } from '../data/site';
   @keyframes music-dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .65; } }
   @media (hover: hover) { .music-note:hover { border-color: var(--stroke-strong); } }
   @media (max-width: 359px) { .music-container { padding: 6px; } .live-card { padding: 18px 12px 10px; } .artwork-frame { width: 105px; height: 105px; } }
-  @media (prefers-reduced-motion: reduce) { .music, .music-dots, .live-dot { animation: none !important; } .music-note { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .music, .music-dots, .live-dot { animation: none !important; } .music-note, [data-progress-fill] { transition: none !important; } }
 </style>

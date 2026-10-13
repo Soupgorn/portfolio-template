@@ -43,7 +43,7 @@ export const site = {
   ] satisfies InfoCardData[],
   music: {
     // Opt in only after authorizing YOUR account. Secrets belong in .env.local.
-    // false: static site, OFFLINE placeholder, and no Spotify requests.
+    // false: static site, UNCONFIGURED placeholder, and no Spotify requests.
     enabled: false,
     // Decorative music note; independent of Spotify configuration.
     tagline: 'a little soundtrack to my space.',

@@ -1,6 +1,6 @@
 # Optional Spotify Now Playing
 
-Start with `site.music.enabled: false` in `src/data/site.ts`. This produces a static portfolio with a generic OFFLINE card and no Spotify requests. All credentials belong to the person customizing the template.
+Start with `site.music.enabled: false` in `src/data/site.ts`. This produces a static portfolio with a generic UNCONFIGURED card and no Spotify requests. All credentials belong to the person customizing the template.
 
 ## Create and authorize your app
 
@@ -18,7 +18,7 @@ The only requested permission is [`user-read-currently-playing`](https://develop
 
 Add `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and `SPOTIFY_REFRESH_TOKEN` to your own Vercel project's environment settings, selecting the environments where the widget should run. Rebuild after enabling it. The homepage remains prerendered; `/api/spotify/now-playing` becomes an on-demand Vercel function. Use the Astro preset and leave the output-directory override unset in enabled mode.
 
-Only sanitized track title, artists, album, artwork URL, Spotify track link, status, and progress reach visitors. Tokens, device information, raw API errors, and user account fields stay server-side. Your current listening metadata becomes public when enabled. The integration uses a short shared cache and request deduplication to limit upstream calls.
+Only sanitized track title, artists, album, artwork URL, Spotify track link, status, and progress reach visitors. Tokens, device information, raw API errors, and user account fields stay server-side. Your current listening metadata becomes public when enabled. The integration uses a 15-second shared cache and request deduplication to limit upstream calls.
 
 The default disabled mode builds to `dist/` and works with `npm run preview`. Enabled Vercel builds use `.vercel/output/`; test the API locally with `npm run dev` because `astro preview` is unsupported by this adapter. No production project is created by this repository's scripts.
 
@@ -28,11 +28,12 @@ Use Vercel's Git-based build for deployment. Local server bundles can contain As
 
 | State | Behavior |
 | --- | --- |
-| Disabled | Generic OFFLINE card; no polling, secret reads, or Spotify calls |
+| Disabled | Generic UNCONFIGURED card; no polling, secret reads, or Spotify calls |
 | Playing | LIVE, current artwork and track link; progress only for valid API values |
-| Paused | OFFLINE; paused metadata can remain and progress freezes |
+| Paused | PAUSED; paused metadata can remain and progress freezes |
 | No playback / private session | OFFLINE placeholder without track metadata |
-| Missing credentials / errors | UNAVAILABLE placeholder without a fake LIVE indicator |
+| Missing credentials | UNCONFIGURED; no fake track, polling stops until reload |
+| Authorization / network errors | UNAVAILABLE; no fake LIVE indicator |
 | Unsupported local track or episode | UNAVAILABLE instead of invented track data |
 
 The browser polls about every 30 seconds while visible, pauses polling when hidden, honors `Retry-After`, and backs off after failures. Snapshots expire after 45 seconds, so stale results cannot retain LIVE. Artwork load failures show the existing music icon. Progress is approximate between API snapshots and reconciles on each response.
@@ -45,4 +46,4 @@ To disable, set `enabled: false`, rebuild, and remove the production secrets if 
 
 ## Verification
 
-Run `npm run check`, `npm test`, `npm run test:browser`, and `npm run build`. Tests use fabricated Spotify metadata and mocked HTTP responses; passing tests does not establish that your account is authorized. Verify your own account separately after setup, then inspect both source and production output before publishing.
+Run `npm run check`, `npx tsc --noEmit`, `npm test`, `npm run test:browser`, and `npm run build`. Tests use fabricated Spotify metadata and mocked HTTP responses; passing tests does not establish that your account is authorized. Verify your own account separately after setup, then inspect both source and production output before publishing.

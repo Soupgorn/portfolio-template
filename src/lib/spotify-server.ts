@@ -56,10 +56,13 @@ export function createSpotifyService(readSecrets: () => SpotifySecrets, dependen
 
   async function load(): Promise<Result> {
     if (dependencies.enabled && !dependencies.enabled()) {
-      return { data: emptyPlayback('offline', now()), httpStatus: 200, cacheSeconds: 0 };
+      return { data: emptyPlayback('unconfigured', now(), 0), httpStatus: 200, cacheSeconds: 0 };
     }
     const secrets = readSecrets();
-    if (!secrets.clientId || !secrets.clientSecret || !secrets.refreshToken || permanentlyUnavailable) {
+    if (!secrets.clientId || !secrets.clientSecret || !secrets.refreshToken) {
+      return { data: emptyPlayback('unconfigured', now(), 0), httpStatus: 200, cacheSeconds: 300 };
+    }
+    if (permanentlyUnavailable) {
       return { data: emptyPlayback('unavailable', now(), 300), httpStatus: 503, cacheSeconds: 60 };
     }
     try {
@@ -77,7 +80,7 @@ export function createSpotifyService(readSecrets: () => SpotifySecrets, dependen
       if (!response.ok) throw new SpotifyFailure();
       const data = response.status === 204 ? emptyPlayback('offline', now()) : sanitizePlayback(await response.json(), now());
       failures = 0;
-      return { data, httpStatus: 200, cacheSeconds: 5 };
+      return { data, httpStatus: 200, cacheSeconds: 15 };
     } catch (error) {
       failures += 1;
       const failure = error instanceof SpotifyFailure ? error : new SpotifyFailure();

@@ -86,20 +86,9 @@ test('unsafe track/artwork URLs and malformed browser responses are rejected', (
 test('missing configuration does not contact Spotify', async () => {
   const h = harness([], {});
   const result = await h.service.get();
-  assert.equal(result.httpStatus, 503);
-  assert.equal(result.data.status, 'unavailable');
-  assert.equal(h.calls.length, 0);
-});
-
-test('disabled service does not read secrets or contact Spotify even when configured', async () => {
-  const service = createSpotifyService(() => { throw new Error('Secrets must not be read'); }, {
-    enabled: () => false,
-    now: () => 100_000,
-    fetch: async () => { throw new Error('No upstream request permitted'); },
-  });
-  const result = await service.get();
   assert.equal(result.httpStatus, 200);
-  assert.deepEqual(result.data, emptyPlayback('offline', 100_000));
+  assert.equal(result.data.status, 'unconfigured');
+  assert.equal(h.calls.length, 0);
 });
 
 test('token refresh uses server credentials and shared cache deduplicates visitors', async () => {
@@ -113,7 +102,7 @@ test('token refresh uses server credentials and shared cache deduplicates visito
   assert.equal(h.calls[1][1].headers.Authorization, 'Bearer MOCK_ACCESS_TOKEN');
   await h.service.get();
   assert.equal(h.calls.length, 2);
-  h.advance(5_001);
+  h.advance(15_001);
   assert.equal((await h.service.get()).data.status, 'paused');
   assert.equal(h.calls.length, 3);
 });
@@ -121,17 +110,17 @@ test('token refresh uses server credentials and shared cache deduplicates visito
 test('server and CDN caches share one snapshot expiry instead of stacking cache lifetimes', async () => {
   const h = harness([json(token), json(fixture), json({ ...fixture, is_playing: false })]);
   const first = await h.service.get();
-  assert.equal(remainingCacheSeconds(first, 1_000_000), 5);
-  h.advance(4_500);
+  assert.equal(remainingCacheSeconds(first, 1_000_000), 15);
+  h.advance(14_500);
   const cached = await h.service.get();
   assert.strictEqual(cached, first);
-  assert.equal(remainingCacheSeconds(cached, 1_004_500), 0);
-  assert.equal(remainingCacheSeconds(cached, 1_005_100), 0);
+  assert.equal(remainingCacheSeconds(cached, 1_014_500), 0);
+  assert.equal(remainingCacheSeconds(cached, 1_015_100), 0);
   assert.equal(h.calls.length, 2);
   h.advance(501);
   const refreshed = await h.service.get();
   assert.equal(refreshed.data.status, 'paused');
-  assert.equal(remainingCacheSeconds(refreshed, 1_005_001), 5);
+  assert.equal(remainingCacheSeconds(refreshed, 1_015_001), 15);
 });
 
 test('HTTP 204 yields an offline placeholder without private metadata', async () => {
@@ -196,4 +185,43 @@ test('access token expiry refreshes before using expired credentials', async () 
   h.advance(3_600_000);
   await h.service.get();
   assert.equal(h.calls.length, 4);
+});
+
+test('disabled integration never reads secrets or contacts Spotify', async () => {
+  const service = createSpotifyService(() => { throw new Error('Secrets must not be read'); }, {
+    enabled: () => false, now: () => 100_000, fetch: async () => { throw new Error('Unexpected request'); },
+  });
+  const result = await service.get();
+  assert.equal(result.data.status, 'unconfigured');
+  assert.equal(result.data.track, null);
+});
+
+test('Unicode titles, multiple artists, optional album and missing metadata are handled', () => {
+  const longTitle = '音楽🎵'.repeat(150);
+  const data = sanitizePlayback({ ...fixture, item: { ...fixture.item, name: longTitle,
+    artists: [{ name: 'Artist One' }, { name: '歌手 二' }], album: null } }, 100_000);
+  assert.equal(Array.from(data.track.title).length, 300);
+  assert.ok(!/[\uD800-\uDBFF]$/.test(data.track.title));
+  assert.deepEqual(data.track.artists, ['Artist One', '歌手 二']);
+  assert.equal(data.track.album, '');
+  assert.equal(data.track.artworkUrl, null);
+  for (const item of [{ ...fixture.item, name: '' }, { ...fixture.item, artists: [] }, { ...fixture.item, external_urls: null }]) {
+    assert.equal(sanitizePlayback({ ...fixture, item }, 100_000).status, 'unavailable');
+  }
+  assert.equal(sanitizePlayback({ is_playing: false }, 100_000).status, 'unavailable');
+  assert.equal(sanitizePlayback({ is_playing: false, item: null, currently_playing_type: 'ad' }, 100_000).status, 'unavailable');
+});
+
+test('invalid durations hide progress; browser boundary drops extra private fields', () => {
+  for (const duration_ms of [0, -1, '180000', null, Infinity]) {
+    const data = sanitizePlayback({ ...fixture, item: { ...fixture.item, duration_ms } }, 100_000);
+    assert.equal(data.durationMs, null);
+    assert.equal(playbackProgress(data, 101_000), null);
+  }
+  const data = sanitizePlayback(fixture, 100_000);
+  const parsed = parseNowPlaying({ ...data, privateAccount: 'PRIVATE', progressMs: -5 });
+  assert.equal(parsed.progressMs, null);
+  assert.equal(parsed.durationMs, null);
+  assert.equal(JSON.stringify(parsed).includes('PRIVATE'), false);
+  assert.equal(parseNowPlaying({ ...data, track: { ...data.track, artists: [''] } }), null);
 });

@@ -22,7 +22,7 @@ test('welcome, keyboard lightbox, safe empty socials, and disabled music', async
   await expect(page.locator('.welcome-period')).toHaveCSS('animation-name', 'period-blink');
   await enter(page);
   await expect(page.getByText('Your Name', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-status-text]')).toHaveText('OFFLINE');
+  await expect(page.locator('[data-status-text]')).toHaveText('UNCONFIGURED');
   await expect(page.locator('[data-artwork]')).toBeHidden();
   await expect(page.locator('[data-progress]')).toBeHidden();
   await expect(page.locator('[data-spotify-link]')).toBeHidden();
@@ -85,7 +85,7 @@ test('content is readable without JavaScript', async ({ browser }) => {
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4325');
   await expect(page.getByText('Your Name', { exact: true })).toBeVisible();
-  await expect(page.locator('[data-status-text]')).toHaveText('OFFLINE');
+  await expect(page.locator('[data-status-text]')).toHaveText('UNCONFIGURED');
   await context.close();
 });
 
@@ -109,7 +109,7 @@ for (const status of ['playing', 'paused', 'offline', 'unavailable'] as const) {
     });
     await page.goto('/');
     await enter(page);
-    await expect(page.locator('[data-status-text]')).toHaveText(status === 'playing' ? 'LIVE' : status === 'unavailable' ? 'UNAVAILABLE' : 'OFFLINE');
+    await expect(page.locator('[data-status-text]')).toHaveText(status === 'playing' ? 'LIVE' : status.toUpperCase());
     if (status === 'playing' || status === 'paused') {
       await expect(page.locator('[data-track-title]').last()).toHaveText('Example Track');
       await expect(page.locator('[data-progress]')).toBeVisible();

@@ -14,7 +14,7 @@ A cream-and-green portfolio for students, developers, and creatives who want a s
 - Soft Terminal Quote Widget with a customizable path, quote, and footer.
 - Instagram, GitHub, LinkedIn, and Email icons with tooltips and hover effects.
 - Ambient green blobs, mouse parallax, and reduced-motion support.
-- Optional forest-green Spotify Now Playing card with artwork, track details, approximate playback progress, and LIVE / OFFLINE / UNAVAILABLE states.
+- Optional Discord-inspired forest-green Spotify Activity card with artwork, track details, approximate playback progress, and LIVE / PAUSED / OFFLINE / UNAVAILABLE states.
 - Decorative music note card, missing-image fallbacks, and readable content without JavaScript.
 
 ## Tech Stack
@@ -50,6 +50,7 @@ Open the URL printed by Astro, normally `http://localhost:4321`.
 ```sh
 npm run check                 # Astro and TypeScript validation
 npm test                      # Unit tests with mock Spotify responses
+npx tsc --noEmit              # Independent TypeScript validation
 npx playwright install chromium --no-shell
 npm run test:browser          # Headless UI and responsive checks
 npm run build                 # Production build
@@ -102,7 +103,7 @@ Destinations default to `null`. Empty, missing, or unsafe URLs render disabled i
 
 ## Spotify Now Playing — Optional
 
-The default `site.music.enabled: false` shows a polished **OFFLINE** placeholder. It makes no Spotify requests, shows no fake track or LIVE badge, and needs no credentials.
+The default `site.music.enabled: false` shows a polished **UNCONFIGURED** placeholder. It makes no Spotify requests, shows no fake track or LIVE badge, and needs no credentials.
 
 To opt in:
 
@@ -113,9 +114,21 @@ To opt in:
 
 Development Mode currently requires the app owner to have **Spotify Premium**. New apps are limited to one Client ID per developer and five authorized users; authorized accounts must be allowlisted. Existing apps may retain grandfathered limits. Check [Spotify's quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes) and [migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide) before setup.
 
-The card refreshes about every 30 seconds while the page is visible. It interpolates valid API progress between snapshots, freezes paused progress, and clears stale LIVE data. Paused or absent playback shows **OFFLINE**; missing credentials, unsupported content, authorization failures, and network errors show **UNAVAILABLE**. Artwork failures keep the generic music icon. No playback controls, listening history, or playlist embedding are included.
+The Discord-like activity refreshes about every 30 seconds while the page is visible. Valid progress advances smoothly between confirmed snapshots and freezes when paused. The LIVE claim expires after 45 seconds without confirmation. Track details crossfade in 250ms; the LIVE dot pulses every 4.5 seconds. Reduced motion disables these animations.
 
-Spotify refresh tokens now expire after six months. For expired/revoked authorization or token rotation, rerun the helper, replace the Vercel secret, and redeploy. See [Spotify's expiration guidance](https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration) and the [setup and troubleshooting guide](docs/spotify-now-playing.md). Set `enabled` back to `false` and rebuild to disable the integration.
+| State | Display |
+| --- | --- |
+| LIVE | Confirmed playback, real metadata/artwork, read-only progress, and Open in Spotify |
+| PAUSED | Confirmed track, muted yellow indicator, and frozen progress |
+| OFFLINE | “Not listening right now” / “probably building something.” |
+| UNAVAILABLE | “Spotify is taking a break.” / “please try again later.” |
+| UNCONFIGURED | Generic placeholder; no fake track, progress, or LIVE badge |
+
+Missing credentials stop polling after one configuration check until reload. A disabled widget makes no request. Artwork failures retain the generic music icon. This feature includes no playback controls, listening history, streaming, or playlist embedding.
+
+A 15-second server cache, request deduplication, and Vercel shared CDN caching reduce upstream calls across visitors. Hidden pages stop polling. Failures back off and respect Spotify `Retry-After`, including delays longer than five minutes. CDN caches are regional, so cold instances can still make additional upstream requests. The feature is near real-time polling, not instant push notifications.
+
+Spotify refresh tokens now expire after six months. For expired/revoked authorization or token rotation, rerun the helper, replace the Vercel secret, and redeploy. See [Spotify's expiration guidance](https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration) and the [setup and troubleshooting guide](docs/spotify-now-playing.md). Set `site.music.enabled` back to `false` and rebuild to disable the integration. To run without Spotify, leave it false, skip OAuth and environment setup, and use the standard installation/build commands. After adding credentials to an enabled deployment, reload the page to restart polling.
 
 Enabling this feature publishes your current track metadata to site visitors. Only authorize an account whose current listening information you intend to share.
 

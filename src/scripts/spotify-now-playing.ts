@@ -1,12 +1,16 @@
 import { emptyPlayback, FRESHNESS_MS, isFresh, parseNowPlaying, playbackProgress, type NowPlaying } from '../lib/spotify-now-playing';
 
+const mounts = new WeakMap<HTMLElement, () => void>();
+
 export function mountNowPlaying(root: HTMLElement): () => void {
-  // Disabled templates keep their server-rendered placeholder without polling.
   if (root.dataset.spotifyEnabled !== 'true') return () => {};
+  const mounted = mounts.get(root);
+  if (mounted) return mounted;
   const element = <T extends HTMLElement>(selector: string) => root.querySelector<T>(selector)!;
   const card = element('[data-live-card]');
   const stage = element('[data-track-stage]');
   const status = element('[data-status-text]');
+  const activity = element('[data-activity-detail]');
   const link = element<HTMLAnchorElement>('[data-spotify-link]');
   const progress = element('[data-progress]');
   const bar = element('[data-progress-bar]');
@@ -24,6 +28,7 @@ export function mountNowPlaying(root: HTMLElement): () => void {
   // failure / Retry-After imposes a deadline across tab visibility changes.
   let retryNotBefore = 0;
   let trackKey = '';
+  let unconfigured = false;
   const animations = new Set<Animation>();
   const formatTime = (ms: number) => `${Math.floor(ms / 60_000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 
@@ -32,9 +37,12 @@ export function mountNowPlaying(root: HTMLElement): () => void {
       render(emptyPlayback('unavailable', Date.now()));
       return;
     }
-    const fresh = isFresh(snapshot, Date.now()) && !document.hidden;
+    const fresh = (snapshot.status === 'unconfigured' || isFresh(snapshot, Date.now())) && !document.hidden;
     card.dataset.status = fresh ? snapshot.status : 'unavailable';
-    status.textContent = fresh ? snapshot.status === 'playing' ? 'LIVE' : snapshot.status === 'unavailable' ? 'UNAVAILABLE' : 'OFFLINE' : 'UNAVAILABLE';
+    const state = card.dataset.status as NowPlaying['status'];
+    root.dataset.playbackStatus = state;
+    status.textContent = state === 'playing' ? 'LIVE' : state.toUpperCase();
+    activity.textContent = state === 'playing' ? 'Listening on Spotify' : state === 'paused' ? 'Playback paused' : state === 'offline' ? 'A quiet moment' : state === 'unconfigured' ? 'Optional Spotify activity' : 'Activity unavailable';
     const value = fresh ? playbackProgress(snapshot, Date.now()) : null;
     progress.hidden = value === null;
     link.hidden = !fresh || !snapshot.track;
@@ -72,9 +80,9 @@ export function mountNowPlaying(root: HTMLElement): () => void {
       outgoingImage.setAttribute('aria-hidden', 'true');
       img.before(outgoingImage);
     }
-    find('[data-track-title]').textContent = data.track?.title ?? 'A quiet moment';
+    find('[data-track-title]').textContent = data.track?.title ?? (data.status === 'offline' ? 'Not listening right now' : data.status === 'unconfigured' ? 'Your soundtrack starts here.' : 'Spotify is taking a break.');
     find('[data-track-title]').title = data.track?.title ?? '';
-    find('[data-track-artist]').textContent = data.track?.artists.join(', ') ?? (data.status === 'offline' ? 'Nothing playing right now.' : 'Listening status is unavailable.');
+    find('[data-track-artist]').textContent = data.track?.artists.join(', ') ?? (data.status === 'offline' ? 'probably building something.' : data.status === 'unconfigured' ? 'Connect Spotify when you’re ready.' : 'please try again later.');
     find('[data-track-artist]').title = data.track?.artists.join(', ') ?? '';
     const album = find('[data-track-album]');
     album.textContent = data.track?.album ?? '';
@@ -116,7 +124,9 @@ export function mountNowPlaying(root: HTMLElement): () => void {
   }
 
   function render(data: NowPlaying) {
-    snapshot = isFresh(data, Date.now()) ? data : emptyPlayback('unavailable', data.fetchedAt, data.retryAfterSeconds);
+    snapshot = data.status === 'unconfigured' || isFresh(data, Date.now()) ? data : emptyPlayback('unavailable', data.fetchedAt, data.retryAfterSeconds);
+    unconfigured = snapshot.status === 'unconfigured';
+    if (unconfigured) clearInterval(progressTimer);
     paintTrack(snapshot);
     if (snapshot.track) link.href = snapshot.track.spotifyUrl;
     else link.removeAttribute('href');
@@ -125,11 +135,11 @@ export function mountNowPlaying(root: HTMLElement): () => void {
 
   function schedule(delay: number) {
     clearTimeout(pollTimer);
-    if (!disposed && !document.hidden) pollTimer = setTimeout(poll, delay);
+    if (!disposed && !document.hidden && !unconfigured) pollTimer = setTimeout(poll, delay);
   }
 
   async function poll() {
-    if (disposed || document.hidden || controller) return;
+    if (disposed || document.hidden || controller || unconfigured) return;
     if (Date.now() < retryNotBefore) { schedule(retryNotBefore - Date.now()); return; }
     retryNotBefore = 0;
     const active = new AbortController();
@@ -178,9 +188,9 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     clearInterval(progressTimer);
     controller?.abort();
     controller = null;
-    render(emptyPlayback('unavailable', Date.now()));
-    if (!document.hidden && !disposed) {
-      progressTimer = setInterval(updateProgress, 1000);
+    if (!unconfigured) render(emptyPlayback('unavailable', Date.now()));
+    if (!document.hidden && !disposed && !unconfigured) {
+      progressTimer = setInterval(updateProgress, 250);
       const remaining = retryNotBefore - Date.now();
       if (remaining > 0) schedule(remaining);
       else void poll();
@@ -189,6 +199,7 @@ export function mountNowPlaying(root: HTMLElement): () => void {
 
   function cleanup(preserveRestore = false) {
     disposed = true;
+    mounts.delete(root);
     clearTimeout(pollTimer);
     clearInterval(progressTimer);
     controller?.abort();
@@ -211,6 +222,7 @@ export function mountNowPlaying(root: HTMLElement): () => void {
   document.addEventListener('astro:before-swap', beforeSwap);
   window.addEventListener('pagehide', pageHide);
   window.addEventListener('pageshow', pageShow);
-  if (!document.hidden) { progressTimer = setInterval(updateProgress, 1000); void poll(); }
+  if (!document.hidden) { progressTimer = setInterval(updateProgress, 250); void poll(); }
+  mounts.set(root, cleanup);
   return cleanup;
 }

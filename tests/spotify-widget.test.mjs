@@ -36,17 +36,6 @@ function setup(context, fetchMock, enabled = true) {
   return { dom, root, cleanup, get: selector => root.querySelector(selector) };
 }
 
-test('disabled template keeps placeholder and never requests data', async context => {
-  let calls = 0;
-  const h = setup(context, async () => { calls += 1; throw new Error('Unexpected request'); }, false);
-  const original = h.root.innerHTML;
-  context.mock.timers.tick(300_000);
-  h.dom.window.document.dispatchEvent(new h.dom.window.Event('visibilitychange'));
-  await flush();
-  assert.equal(calls, 0);
-  assert.equal(h.root.innerHTML, original);
-});
-
 test('widget renders safe real metadata, artwork, track link and pause progress', async context => {
   let paused = false;
   const h = setup(context, async () => new Response(JSON.stringify({ ...data(), status: paused ? 'paused' : 'playing' })));
@@ -62,7 +51,8 @@ test('widget renders safe real metadata, artwork, track link and pause progress'
   assert.equal(h.get('[data-elapsed]').textContent, '0:13');
   paused = true;
   context.mock.timers.tick(29000); await flush();
-  assert.equal(h.get('[data-status-text]').textContent, 'OFFLINE');
+  assert.equal(h.get('[data-status-text]').textContent, 'PAUSED');
+  assert.equal(h.get('[data-activity-detail]').textContent, 'Playback paused');
   context.mock.timers.tick(5000);
   assert.equal(h.get('[data-elapsed]').textContent, '0:12');
 });
@@ -231,4 +221,52 @@ test('browser back-forward cache restoration remounts polling after cleanup', as
   await flush();
   assert.equal(calls, 2);
   h.dom.window.dispatchEvent(new h.dom.window.PageTransitionEvent('pagehide', { persisted: false }));
+});
+
+test('disabled widget never polls or creates progress timers', async context => {
+  let calls = 0;
+  const h = setup(context, async () => { calls++; throw new Error('Unexpected request'); }, false);
+  const initial = h.root.innerHTML;
+  context.mock.timers.tick(300_000);
+  h.dom.window.document.dispatchEvent(new h.dom.window.Event('visibilitychange'));
+  await flush();
+  assert.equal(calls, 0);
+  assert.equal(h.root.innerHTML, initial);
+});
+
+test('missing configuration stops repeated polling and preserves its generic state', async context => {
+  let calls = 0;
+  const h = setup(context, async () => { calls++; return new Response(JSON.stringify({ ...data(), status: 'unconfigured', track: null })); });
+  await flush();
+  context.mock.timers.tick(300_000);
+  h.dom.window.document.dispatchEvent(new h.dom.window.Event('visibilitychange'));
+  await flush();
+  assert.equal(calls, 1);
+  assert.equal(h.get('[data-status-text]').textContent, 'UNCONFIGURED');
+  assert.equal(h.get('[data-track-title]').textContent, 'Your soundtrack starts here.');
+  assert.equal(h.get('[data-progress]').hidden, true);
+});
+
+test('offline and unavailable use distinct copy with no artwork, progress or track link', async context => {
+  let state = 'offline';
+  const h = setup(context, async () => new Response(JSON.stringify({ ...data(), status: state, track: null })));
+  await flush();
+  assert.equal(h.get('[data-track-title]').textContent, 'Not listening right now');
+  assert.equal(h.get('[data-track-artist]').textContent, 'probably building something.');
+  state = 'unavailable';
+  context.mock.timers.tick(30_000); await flush();
+  assert.equal(h.get('[data-track-title]').textContent, 'Spotify is taking a break.');
+  assert.equal(h.get('[data-track-artist]').textContent, 'please try again later.');
+  assert.equal(h.get('[data-artwork]').hasAttribute('src'), false);
+  assert.equal(h.get('[data-progress]').hidden, true);
+  assert.equal(h.get('[data-spotify-link]').hasAttribute('href'), false);
+});
+
+test('mounting the same widget twice does not duplicate polling', async context => {
+  let calls = 0;
+  const h = setup(context, async () => { calls++; return new Response(JSON.stringify(data())); });
+  assert.strictEqual(mountNowPlaying(h.root), h.cleanup);
+  await flush();
+  context.mock.timers.tick(30_000); await flush();
+  assert.equal(calls, 2);
 });
