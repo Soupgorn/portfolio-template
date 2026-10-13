@@ -16,8 +16,9 @@ export interface InfoCardData {
   badges?: string[];
 }
 
-/** All personal information and asset paths live here. Paths are relative to public/. */
+/** Start here: customize your content, links, and local public/ asset paths. */
 export const site = {
+  // Display name, full name, and nickname.
   name: 'Your Name',
   subtitle: 'Example Full Name',
   tagline: 'Nickname',
@@ -41,16 +42,15 @@ export const site = {
     { id: 'interests', icon: 'code', heading: 'Interests', badges: ['Interest One', 'Interest Two'] },
   ] satisfies InfoCardData[],
   music: {
-    provider: 'spotify',
-    // PERSONALIZE: paste your public Spotify playlist sharing URL here, then rebuild.
-    // Leave empty to show the coming-soon card. Query parameters are supported.
-    playlistUrl: '',
-    playlistName: 'My Playlist',
+    // Opt in only after authorizing YOUR account. Secrets belong in .env.local.
+    // false: static site, OFFLINE placeholder, and no Spotify requests.
+    enabled: false,
+    // Decorative music note; independent of Spotify configuration.
     tagline: 'a little soundtrack to my space.',
   },
   seo: {
     title: 'Your Name — Portfolio',
-    description: 'A personal portfolio with profile details, contact links, and a favorite playlist.',
+    description: 'A personal portfolio with profile details, contact links, and an optional music widget.',
     /** Set your deployed origin, e.g. https://your-domain.tld, to enable a canonical URL. */
     url: '',
   },

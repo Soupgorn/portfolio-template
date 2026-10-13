@@ -7,20 +7,30 @@
     "dev": "astro dev",
     "check": "astro check",
     "test": "node --test tests/*.test.mjs",
+    "test:browser": "playwright test",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "spotify:authorize": "node --env-file-if-exists=.env.local scripts/authorize-spotify.mjs"
   },
   "engines": {
     "node": ">=22.12.0"
   },
   "dependencies": {
+    "@astrojs/vercel": "^11.0.14",
     "astro": "7.3.8"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@playwright/test": "^1.64.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "^24.19.2",
+    "jsdom": "^27.4.0",
     "tailwindcss": "4.3.3",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@vercel/routing-utils": {
+      "path-to-regexp": "6.3.0"
+    }
   }
 }

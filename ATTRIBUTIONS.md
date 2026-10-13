@@ -10,6 +10,6 @@ Their original copyright notices and SIL Open Font License texts are retained in
 
 The Discord and LINE SVG paths in `src/components/Icon.astro` come from [Simple Icons](https://github.com/simple-icons/simple-icons). Other icons and the abstract favicon are small inline SVG drawings. The generic avatar is a geometric SVG illustration created for this template; it contains no photograph or personal likeness.
 
-Spotify content is rendered remotely through the official embed. No recording, album artwork, or personal photograph is distributed with this template.
+When explicitly enabled, Spotify metadata and artwork are loaded remotely through the Spotify Web API. The music card includes Spotify attribution and a link back to the track. No recording, album artwork, listening history, or personal photograph is distributed with this template. Spotify's name and logo remain its trademarks; integrations must follow its [Developer Terms](https://developer.spotify.com/terms) and [design guidelines](https://developer.spotify.com/documentation/design).
 
 No project-wide license has been selected. Existing third-party license notices are retained; they do not grant a license to the entire project. Choose a project license before distributing the repository as an open-source template.
