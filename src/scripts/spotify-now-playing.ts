@@ -10,7 +10,6 @@ export function mountNowPlaying(root: HTMLElement): () => void {
   const card = element('[data-live-card]');
   const stage = element('[data-track-stage]');
   const status = element('[data-status-text]');
-  const activity = element('[data-activity-detail]');
   const link = element<HTMLAnchorElement>('[data-spotify-link]');
   const progress = element('[data-progress]');
   const bar = element('[data-progress-bar]');
@@ -42,7 +41,6 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     const state = card.dataset.status as NowPlaying['status'];
     root.dataset.playbackStatus = state;
     status.textContent = state === 'playing' ? 'LIVE' : state.toUpperCase();
-    activity.textContent = state === 'playing' ? 'Listening on Spotify' : state === 'paused' ? 'Playback paused' : state === 'offline' ? 'A quiet moment' : state === 'unconfigured' ? 'Optional Spotify activity' : 'Activity unavailable';
     const value = fresh ? playbackProgress(snapshot, Date.now()) : null;
     progress.hidden = value === null;
     link.hidden = !fresh || !snapshot.track;
@@ -84,11 +82,6 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     find('[data-track-title]').title = data.track?.title ?? '';
     find('[data-track-artist]').textContent = data.track?.artists.join(', ') ?? (data.status === 'offline' ? 'probably building something.' : data.status === 'unconfigured' ? 'Connect Spotify when you’re ready.' : 'please try again later.');
     find('[data-track-artist]').title = data.track?.artists.join(', ') ?? '';
-    const album = find('[data-track-album]');
-    album.textContent = data.track?.album ?? '';
-    // Reserve this line even in fallback states to keep crossfades stable.
-    album.hidden = false;
-    album.textContent ||= '\u00a0';
     img.hidden = true;
     img.removeAttribute('src');
     img.alt = data.track ? `${data.track.album || data.track.title} album artwork` : '';

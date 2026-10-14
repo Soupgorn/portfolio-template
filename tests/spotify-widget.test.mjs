@@ -52,7 +52,8 @@ test('widget renders safe real metadata, artwork, track link and pause progress'
   paused = true;
   context.mock.timers.tick(29000); await flush();
   assert.equal(h.get('[data-status-text]').textContent, 'PAUSED');
-  assert.equal(h.get('[data-activity-detail]').textContent, 'Playback paused');
+  assert.equal(h.get('[data-activity-detail]'), null);
+  assert.equal(h.get('[data-track-album]'), null);
   context.mock.timers.tick(5000);
   assert.equal(h.get('[data-elapsed]').textContent, '0:12');
 });
