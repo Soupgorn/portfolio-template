@@ -1,0 +1,11 @@
+/* One shell and one animated viewport. Component styling remains in its existing files. */
+:root { scrollbar-gutter: stable; }
+.portfolio-page { align-items: start; }
+.portfolio-card { display: flex; flex-direction: column; gap: 24px; }
+.portfolio-viewport { min-width: 0; }
+.portfolio-panel { display: none; min-width: 0; }
+.home-panel { grid-template-columns: minmax(0, 1fr); grid-template-areas: "upper" "music"; }
+:root[data-portfolio-view="home"] .home-panel { display: grid; gap: 24px; }
+:root[data-portfolio-view="projects"] .projects-panel { display: block; }
+[data-portfolio-shell]:not([data-panel-state="idle"]) .portfolio-viewport { overflow: clip; }
+[data-portfolio-panel] h1:focus { outline: none; }

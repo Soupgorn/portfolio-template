@@ -1,0 +1,33 @@
+---
+import type { ProjectScreenshot } from '../data/projects';
+import { assetUrl } from '../lib/assets';
+import Icon from './Icon.astro';
+interface Props { image?: ProjectScreenshot; compact?: boolean }
+const { image, compact = false } = Astro.props;
+---
+<div class:list={['project-image', { 'project-image-placeholder': !image, 'project-image-compact': compact && !image }]} data-project-image>
+  {image && (
+    <img src={assetUrl(image.src)} alt={image.alt} width={image.width} height={image.height} loading="lazy" decoding="async" />
+  )}
+  <div class="placeholder-copy" hidden={Boolean(image)}><Icon name="code" size={30} /><span>Screenshot not available</span></div>
+</div>
+<script>
+  const mounted = new WeakSet<HTMLImageElement>();
+  const mount = () => document.querySelectorAll<HTMLElement>('[data-project-image]').forEach(frame => {
+    const image = frame.querySelector('img');
+    const placeholder = frame.querySelector<HTMLElement>('.placeholder-copy');
+    if (!image || !placeholder || mounted.has(image)) return;
+    mounted.add(image);
+    const fallback = () => { image.hidden = true; placeholder.hidden = false; frame.classList.add('project-image-placeholder'); };
+    image.addEventListener('error', fallback, { once: true });
+    if (image.complete && image.naturalWidth === 0) fallback();
+  });
+  mount();
+</script>
+<style>
+  .project-image { min-width: 0; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; background: var(--color-soft-green); }
+  img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  .project-image-placeholder { display: grid; place-items: center; padding: 24px; }
+  .project-image-compact { aspect-ratio: 3 / 1; min-height: 140px; max-height: 220px; }
+  .placeholder-copy { display: grid; justify-items: center; gap: 14px; color: var(--color-ink); font-family: var(--font-label); font-size: 11px; line-height: 1.6; text-align: center; }
+</style>

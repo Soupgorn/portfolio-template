@@ -4,15 +4,14 @@ import Icon from './Icon.astro';
 
 // Keep accidental placeholder, relative, and unsafe URLs from becoming active links.
 function isConfigured(contact: Contact): boolean {
-  if (!contact.href) return false;
-  if (contact.platform === 'email') return /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(contact.href);
+  if (contact.platform === 'email') return /^mailto:[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(contact.href ?? '');
   try {
-    const url = new URL(contact.href);
+    const url = new URL(contact.href ?? '');
     return url.protocol === 'https:' && !url.username && !url.password;
   } catch { return false; }
 }
 ---
-<footer class="contacts" aria-labelledby="contact-heading">
+<footer id="contact" class="contacts" aria-labelledby="contact-heading" tabindex="-1">
   <div class="contact-copy">
     <h2 id="contact-heading" class="eyebrow">{site.contactLabel}</h2>
     <p class="contact-tagline">{site.contactTagline}</p>
@@ -29,6 +28,7 @@ function isConfigured(contact: Contact): boolean {
             <Icon name={contact.platform} size={21} />
           </span>
         )}
+        <span class="contact-caption" aria-hidden="true">{contact.label}</span>
         <span class="contact-tooltip" aria-hidden="true">{contact.label}{!isConfigured(contact) && <small>Not configured</small>}</span>
       </li>
     ))}
@@ -37,34 +37,37 @@ function isConfigured(contact: Contact): boolean {
 </footer>
 
 <script>
-  const items = document.querySelectorAll<HTMLElement>('.contact-item');
-  const dismiss = (item: HTMLElement) => {
-    item.dataset.tooltipDismissed = 'true';
-    delete item.dataset.tooltipFocused;
-  };
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') items.forEach((item) => { if (item.matches(':hover, :focus-within')) dismiss(item); });
-  });
-
-  items.forEach((item) => {
-    item.addEventListener('pointerenter', () => { delete item.dataset.tooltipDismissed; });
-    item.addEventListener('pointerleave', () => { delete item.dataset.tooltipDismissed; });
-    item.addEventListener('pointerdown', () => { delete item.dataset.tooltipFocused; });
-    item.addEventListener('click', (event) => {
-      if (event.target instanceof Element && event.target.closest('.contact-link')) dismiss(item);
-      // Leave native link navigation and target behavior untouched.
-    });
-    item.addEventListener('focusin', (event) => {
-      if (event.target instanceof Element && event.target.matches('.contact-link:focus-visible')) {
-        delete item.dataset.tooltipDismissed;
-        item.dataset.tooltipFocused = 'true';
-      }
-    });
-    item.addEventListener('focusout', () => {
+  const mounted = new WeakSet<HTMLElement>();
+  function mountContacts() {
+    const footer = document.querySelector<HTMLElement>('.contacts');
+    if (!footer || mounted.has(footer)) return;
+    mounted.add(footer);
+    const controller = new AbortController();
+    const options = { signal: controller.signal };
+    const items = footer.querySelectorAll<HTMLElement>('.contact-item');
+    const dismiss = (item: HTMLElement) => {
+      item.dataset.tooltipDismissed = 'true';
       delete item.dataset.tooltipFocused;
-      // Opening a new tab can blur the link while the pointer is still over it.
-      // Only a new hover/focus session resets a click dismissal.
+    };
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') items.forEach(item => { if (item.matches(':hover, :focus-within')) dismiss(item); });
+    }, options);
+    items.forEach(item => {
+      item.addEventListener('pointerenter', () => { delete item.dataset.tooltipDismissed; }, options);
+      item.addEventListener('pointerleave', () => { delete item.dataset.tooltipDismissed; }, options);
+      item.addEventListener('pointerdown', () => { delete item.dataset.tooltipFocused; }, options);
+      item.addEventListener('click', event => {
+        if (event.target instanceof Element && event.target.closest('.contact-link')) dismiss(item);
+      }, options);
+      item.addEventListener('focusin', event => {
+        if (event.target instanceof Element && event.target.matches('.contact-link:focus-visible')) {
+          delete item.dataset.tooltipDismissed;
+          item.dataset.tooltipFocused = 'true';
+        }
+      }, options);
+      item.addEventListener('focusout', () => { delete item.dataset.tooltipFocused; }, options);
     });
-  });
+    window.addEventListener('pagehide', event => { if (!event.persisted) controller.abort(); }, options);
+  }
+  mountContacts();
 </script>

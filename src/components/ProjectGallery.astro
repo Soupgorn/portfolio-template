@@ -1,0 +1,40 @@
+---
+import { projects, type Project } from '../data/projects';
+import { assetUrl } from '../lib/assets';
+import ProjectCard from './ProjectCard.astro';
+import ProjectDialog from './ProjectDialog.astro';
+interface Props { entries?: readonly Project[] }
+const { entries = projects } = Astro.props;
+const ordered = [...entries].sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
+const dialogId = (project: Project, index: number) => `project-${project.slug ?? index}-details`;
+---
+<div data-project-gallery>
+  {ordered.length ? (
+    <>
+      <section class="projects-grid" aria-label="Selected projects">
+        {ordered.map((project, index) => <ProjectCard project={project} dialogId={dialogId(project, index)} />)}
+      </section>
+      {ordered.map((project, index) => <ProjectDialog project={project} id={dialogId(project, index)} />)}
+    </>
+  ) : (
+    <section class="projects-empty" aria-labelledby="projects-empty-heading">
+      <h2 id="projects-empty-heading">No projects added yet.</h2>
+      <p>Projects and experiments will appear here as they're shared.</p>
+      <a href={assetUrl('/')} data-panel-link="home">Back to home</a>
+    </section>
+  )}
+</div>
+<script>
+  import { mountProjectDialogs } from '../scripts/project-dialog';
+  const mount = () => document.querySelectorAll<HTMLElement>('[data-project-gallery]').forEach(mountProjectDialogs);
+  mount();
+
+</script>
+<style>
+  .projects-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .projects-empty { padding: 32px 0 8px; border-top: 1px solid var(--stroke-subtle); }
+  .projects-empty h2 { margin: 0; font-family: var(--font-display); font-size: 22px; font-weight: 500; letter-spacing: -.02em; line-height: 1.4; }
+  .projects-empty p { max-width: 42ch; margin: 12px 0 20px; color: var(--color-muted); font-size: 14px; line-height: 1.75; }
+  .projects-empty a { display: inline-flex; align-items: center; min-height: 44px; color: var(--color-signature-green); font-size: 13px; font-weight: 600; text-underline-offset: 5px; }
+  @media (min-width: 900px) { .projects-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>

@@ -1,6 +1,8 @@
 import { emptyPlayback, FRESHNESS_MS, isFresh, parseNowPlaying, playbackProgress, type NowPlaying } from '../lib/spotify-now-playing';
 
 const mounts = new WeakMap<HTMLElement, () => void>();
+// Browser-cache remounts can reuse fresh public data. Panel switches keep this instance mounted.
+const recentSnapshots = new WeakMap<Document, NowPlaying>();
 
 export function mountNowPlaying(root: HTMLElement): () => void {
   if (root.dataset.spotifyEnabled !== 'true') return () => {};
@@ -28,6 +30,8 @@ export function mountNowPlaying(root: HTMLElement): () => void {
   let retryNotBefore = 0;
   let trackKey = '';
   let unconfigured = false;
+  const panel = root.closest<HTMLElement>('[data-portfolio-panel]');
+  const isActive = () => !document.hidden && (!panel || document.documentElement.dataset.portfolioView === panel.dataset.portfolioPanel);
   const animations = new Set<Animation>();
   const formatTime = (ms: number) => `${Math.floor(ms / 60_000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 
@@ -36,7 +40,7 @@ export function mountNowPlaying(root: HTMLElement): () => void {
       render(emptyPlayback('unavailable', Date.now()));
       return;
     }
-    const fresh = (snapshot.status === 'unconfigured' || isFresh(snapshot, Date.now())) && !document.hidden;
+    const fresh = (snapshot.status === 'unconfigured' || isFresh(snapshot, Date.now())) && isActive();
     card.dataset.status = fresh ? snapshot.status : 'unavailable';
     const state = card.dataset.status as NowPlaying['status'];
     root.dataset.playbackStatus = state;
@@ -44,7 +48,8 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     const value = fresh ? playbackProgress(snapshot, Date.now()) : null;
     progress.hidden = value === null;
     link.hidden = !fresh || !snapshot.track;
-    if (!fresh) link.removeAttribute('href');
+    if (fresh && snapshot.track) link.href = snapshot.track.spotifyUrl;
+    else link.removeAttribute('href');
     if (value !== null && snapshot.durationMs) {
       const percent = value / snapshot.durationMs * 100;
       fill.style.width = `${percent}%`;
@@ -58,6 +63,7 @@ export function mountNowPlaying(root: HTMLElement): () => void {
   function paintTrack(data: NowPlaying) {
     const key = JSON.stringify([data.track, data.track ? null : data.status]);
     if (key === trackKey) return;
+    const firstPaint = trackKey === '';
     trackKey = key;
     animations.forEach(animation => animation.cancel());
     animations.clear();
@@ -106,7 +112,8 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     stage.append(next);
     layer = next;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced || typeof next.animate !== 'function') { previous.remove(); return; }
+    // Initial hydration replaces the SSR fallback; subsequent real track changes crossfade.
+    if (firstPaint || reduced || typeof next.animate !== 'function') { previous.remove(); return; }
     previous.dataset.outgoing = '';
     previous.setAttribute('aria-hidden', 'true');
     for (const [node, opacity] of [[previous, [1, 0]], [next, [0, 1]]] as const) {
@@ -118,6 +125,8 @@ export function mountNowPlaying(root: HTMLElement): () => void {
 
   function render(data: NowPlaying) {
     snapshot = data.status === 'unconfigured' || isFresh(data, Date.now()) ? data : emptyPlayback('unavailable', data.fetchedAt, data.retryAfterSeconds);
+    if ((snapshot.status === 'playing' || snapshot.status === 'paused') && isFresh(snapshot, Date.now())) recentSnapshots.set(document, snapshot);
+    else recentSnapshots.delete(document);
     unconfigured = snapshot.status === 'unconfigured';
     if (unconfigured) clearInterval(progressTimer);
     paintTrack(snapshot);
@@ -128,11 +137,11 @@ export function mountNowPlaying(root: HTMLElement): () => void {
 
   function schedule(delay: number) {
     clearTimeout(pollTimer);
-    if (!disposed && !document.hidden && !unconfigured) pollTimer = setTimeout(poll, delay);
+    if (!disposed && isActive() && !unconfigured) pollTimer = setTimeout(poll, delay);
   }
 
   async function poll() {
-    if (disposed || document.hidden || controller || unconfigured) return;
+    if (disposed || !isActive() || controller || unconfigured) return;
     if (Date.now() < retryNotBefore) { schedule(retryNotBefore - Date.now()); return; }
     retryNotBefore = 0;
     const active = new AbortController();
@@ -151,7 +160,7 @@ export function mountNowPlaying(root: HTMLElement): () => void {
       }
       const data = parseNowPlaying(await response.json());
       if (!data || (!response.ok && data.status !== 'unavailable')) throw new Error('Invalid playback response');
-      if (disposed || document.hidden || controller !== active) return;
+      if (disposed || !isActive() || controller !== active) return;
       failures = data.status === 'unavailable' ? failures + 1 : 0;
       if (failures) delay = Math.max(delay, data.retryAfterSeconds * 1000);
       else {
@@ -162,7 +171,7 @@ export function mountNowPlaying(root: HTMLElement): () => void {
       }
       render(data);
     } catch {
-      if (disposed || document.hidden || controller !== active) return;
+      if (disposed || !isActive() || controller !== active) return;
       failures += 1;
       render(emptyPlayback('unavailable', Date.now()));
     } finally {
@@ -182,7 +191,22 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     controller?.abort();
     controller = null;
     if (!unconfigured) render(emptyPlayback('unavailable', Date.now()));
-    if (!document.hidden && !disposed && !unconfigured) {
+    if (isActive() && !disposed && !unconfigured) {
+      progressTimer = setInterval(updateProgress, 250);
+      const remaining = retryNotBefore - Date.now();
+      if (remaining > 0) schedule(remaining);
+      else void poll();
+    }
+  }
+
+  // Hidden Home suspends work without destroying its track/artwork or retry deadline.
+  function panelVisibility() {
+    clearTimeout(pollTimer);
+    clearInterval(progressTimer);
+    controller?.abort();
+    controller = null;
+    updateProgress(); // Recheck freshness synchronously before Home is revealed.
+    if (isActive() && !disposed && !unconfigured) {
       progressTimer = setInterval(updateProgress, 250);
       const remaining = retryNotBefore - Date.now();
       if (remaining > 0) schedule(remaining);
@@ -199,11 +223,10 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     animations.forEach(animation => animation.cancel());
     animations.clear();
     document.removeEventListener('visibilitychange', visibility);
-    document.removeEventListener('astro:before-swap', beforeSwap);
+    document.removeEventListener('portfolio:panel-change', panelVisibility);
     window.removeEventListener('pagehide', pageHide);
     if (!preserveRestore) window.removeEventListener('pageshow', pageShow);
   }
-  const beforeSwap = () => cleanup();
   const pageHide = (event: PageTransitionEvent) => cleanup(event.persisted);
   const pageShow = (event: PageTransitionEvent) => {
     if (event.persisted && disposed && root.isConnected) {
@@ -212,10 +235,13 @@ export function mountNowPlaying(root: HTMLElement): () => void {
     }
   };
   document.addEventListener('visibilitychange', visibility);
-  document.addEventListener('astro:before-swap', beforeSwap);
+  document.addEventListener('portfolio:panel-change', panelVisibility);
   window.addEventListener('pagehide', pageHide);
   window.addEventListener('pageshow', pageShow);
-  if (!document.hidden) { progressTimer = setInterval(updateProgress, 250); void poll(); }
+  const previous = recentSnapshots.get(document);
+  if (previous && isFresh(previous, Date.now())) render(previous);
+  else recentSnapshots.delete(document);
+  if (isActive()) { progressTimer = setInterval(updateProgress, 250); void poll(); }
   mounts.set(root, cleanup);
   return cleanup;
 }

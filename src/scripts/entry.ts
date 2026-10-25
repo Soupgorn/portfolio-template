@@ -21,6 +21,7 @@ if (root.dataset.entry === 'welcome' && welcome && contact && enter) {
     window.clearTimeout(exitTimer);
     window.clearTimeout(completionTimer);
     state = 'entered';
+    try { sessionStorage.setItem(root.dataset.entryStorageKey ?? 'portfolio:entered', 'true'); } catch {}
     root.dataset.entry = state;
     // All staggers have finished. Removing their class prevents preference changes from replaying them.
     root.classList.remove('entry-reveal');
@@ -55,6 +56,10 @@ if (root.dataset.entry === 'welcome' && welcome && contact && enter) {
   window.addEventListener('pagehide', (event) => {
     if (state === 'exiting') completeEntry();
     if (!event.persisted) controller.abort();
+  }, options);
+  document.addEventListener('portfolio:before-change', () => {
+    if (state === 'welcome') state = 'exiting';
+    completeEntry();
   }, options);
 
   document.dispatchEvent(new Event('entry:ready'));

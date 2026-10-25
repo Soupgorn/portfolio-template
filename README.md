@@ -1,42 +1,25 @@
 # Astro Portfolio Template
 
-A minimal, animated, and customizable personal portfolio built with Astro, TypeScript, and Tailwind CSS.
+A cream-and-green portfolio with a compact profile, a Tech Stack card, project detail dialogs, and optional Spotify activity. All shipped profile information and projects are generic examples.
 
-## Project Overview
+![Current generic desktop preview](docs/preview-desktop.png)
 
-A cream-and-green portfolio for students, developers, and creatives who want a small personal space. Start with generic content, customize one configuration file, and publish your own site. No Spotify credentials are needed to run the default template.
+[Mobile preview](docs/preview-mobile.png) · [Projects preview](docs/preview-projects.png)
 
-## Features
+## Included
 
-- Responsive profile, education, location, and interests cards.
-- Animated `welcome.` screen and **Enter my space** transition.
-- Interactive profile photo lightbox with keyboard controls and lazy full-resolution loading.
-- Soft Terminal Quote Widget with a customizable path, quote, and footer.
-- Instagram, GitHub, LinkedIn, and Email icons with tooltips and hover effects.
-- Ambient green blobs, mouse parallax, and reduced-motion support.
-- Optional Discord-inspired forest-green Spotify Activity card with artwork, track details, approximate playback progress, and LIVE / PAUSED / OFFLINE / UNAVAILABLE states.
-- Decorative music note card, missing-image fallbacks, and readable content without JavaScript.
+- Compact Portfolio 2.0: profile, static terminal quote, education, location, and interests on the left; technology categories on the right; full-width horizontal Spotify below; one social footer.
+- One persistent Home/Projects interface at `/`, with coordinated 140ms exit and 220ms entry transitions. Panels never change the URL or browser history, reload the document, or replay Welcome.
+- Contact scrolls to and focuses the existing footer. Reduced motion uses immediate scrolling.
+- Fictional sample projects with responsive cards, technology badges, and accessible native detail dialogs.
+- `welcome.` entrance with a blinking red period; a generic avatar and accessible photo lightbox.
+- Ambient gradient shapes, pointer parallax, visible keyboard focus, and reduced-motion support.
+- Optional server-side Spotify Now Playing. Disabled by default, with no API requests, fake LIVE activity, or progress.
+- Self-hosted Space Grotesk, Inter, and IBM Plex Mono. The static quote widget has no command input or interactive terminal.
 
-## Tech Stack
+## Start locally
 
-| Technology | Role |
-| --- | --- |
-| Astro 7.3.8 | Components and prerendered homepage |
-| TypeScript 5.9 | Typed configuration and browser interactions |
-| Tailwind CSS 4.3.3 | Styling through `@tailwindcss/vite` |
-| `@astrojs/vercel` | Optional server function when Spotify is enabled |
-| Node.js test runner, jsdom, Playwright | Unit and browser validation |
-| Self-hosted fonts | Space Grotesk, Inter, and IBM Plex Mono |
-
-## Preview
-
-![Generic desktop portfolio preview](docs/preview-desktop.png)
-
-[View the mobile preview](docs/preview-mobile.png). Both previews use the included SVG avatar and example content.
-
-## Getting Started
-
-Install **Node.js 22.12.0 or newer** and npm.
+Install Node.js **22.19.0 or newer** and npm, then:
 
 ```sh
 git clone https://github.com/Soupgorn/portfolio-template.git
@@ -45,147 +28,101 @@ npm ci
 npm run dev
 ```
 
-Open the URL printed by Astro, normally `http://localhost:4321`.
+Open the URL Astro prints, normally `http://localhost:4321`. Spotify setup is unnecessary for the default site.
+
+## Customize
+
+| File | What to change |
+| --- | --- |
+| [src/data/site.ts](src/data/site.ts) | Name, introduction, education, location, interests, quote, social links, Projects heading, metadata, avatar paths, optional Spotify flag |
+| [src/data/techStack.ts](src/data/techStack.ts) | Languages, Web & Frameworks, Tools & Infrastructure; category order and technology badges |
+| [src/data/projects.ts](src/data/projects.ts) | Replace the fictional examples with your own projects |
+| [src/styles/](src/styles/) | Existing palette, typography, spacing, and motion |
+
+Configuration interfaces are typed. Keep identifiers unique; leave optional values empty when they are unavailable. Empty technology categories disappear. An empty projects array displays an intentional empty state.
+
+Social destinations default to `null`. Use full HTTPS profile URLs or `mailto:hello@example.com`. Missing or unsafe destinations remain disabled, with a “Not configured” tooltip. Social links open in a new tab; email opens the visitor's mail app.
+
+Edit `site.quote.label`, `text`, and `footer` to customize the Soft Terminal Quote Widget. It remains a visual quote with a red cursor.
+
+### Projects and detail dialogs
+
+See [the project configuration guide](docs/projects.md). Required fields are `title`, `description`, and `technologies`; use a unique `slug` for each dialog. Optional fields include `longDescription`, `features`, `challenges`, `category`, `featured`, screenshots, and source/demo URLs.
+
+The included projects are explicitly fictional. The example.com demo link is a placeholder. Replace it before publishing your work. GitHub buttons appear when you supply a valid `githubUrl` and `sourceVisibility: 'public'`; no invented repository is shipped. Invalid links and private-source links are omitted.
+
+Cards open native dialogs with Enter, Space, or a click/tap. Dialogs support Escape, backdrop and close-button dismissal, focus containment/restoration, scroll locking, and reduced motion. Without JavaScript, both panels and project summaries remain readable inline; dialogs require JavaScript. There is no `/projects` route or redirect.
+
+### Avatar and screenshots
+
+Replace `public/images/avatar.svg` or configure `site.photo` and descriptive `site.photoAlt`. Optional `photoFull` loads a larger image only on first open; an empty value reuses the thumbnail. Missing images use a neutral fallback.
+
+Project screenshots accept local public paths, alt text, and actual dimensions. `example-web.svg` and `example-tool.svg` are generic geometric illustrations, not product screenshots. To distribute a new image, review its content/metadata and add a specific `.gitignore` exception. **Every file in `public/` is copied to production, including ignored files.** Keep private media and recordings outside that directory. No audio is required.
+
+### Single-page navigation
+
+[PortfolioShell.astro](src/components/PortfolioShell.astro) keeps the navigation, background, footer, Home, and Projects mounted. The controller switches one content viewport as a group: exit, switch while invisible, then enter. Hidden panels are inert and excluded from keyboard navigation. Rapid requests use the latest destination; resizing or reduced-motion changes finish the current animation cleanly.
+
+Navigation buttons change no pathname, fragment, query string, or browser history. Refresh starts at Home; Welcome is remembered for the current tab under `site.entryStorageKey`. Contact focuses and scrolls to the existing footer without opening another panel. See [the navigation guide](docs/navigation.md).
+
+## Optional Spotify
+
+Keep `site.music.enabled: false` for a fully static site with a graceful **UNCONFIGURED** card. No credentials are read and no browser Spotify requests are sent. The default build succeeds with no environment file.
+
+To enable your own public listening activity:
+
+1. Create a Spotify Developer App and check Spotify's current account/access requirements.
+2. Register `http://127.0.0.1:4387/callback`.
+3. Copy [.env.example](.env.example) to ignored `.env.local`, then fill your own Client ID and Client Secret.
+4. Run `npm run spotify:authorize`. Open its authorization link yourself; the local helper saves the refresh token to `.env.local` without printing it.
+5. Set `site.music.enabled: true`, restart development, and configure all three server secrets on your server-capable host before rebuilding.
+
+Only `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and `SPOTIFY_REFRESH_TOKEN` are used. Never put them in public configuration, browser code, commits, or `PUBLIC_` variables. [.env.example](.env.example) contains names and empty values only.
+
+Enabled mode supports LIVE, PAUSED, OFFLINE, UNAVAILABLE, and UNCONFIGURED, with real track links/artwork and approximate progress from confirmed snapshots. Missing credentials stop polling after one check. Hidden Home or a hidden tab suspends requests and progress timers. Stale/failed snapshots cannot claim LIVE. This is read-only activity, with no playback controls or autoplay.
+
+Set `enabled` back to `false` and rebuild to disable Spotify. See [setup and troubleshooting](docs/spotify-now-playing.md), including token renewal and safe failure behavior.
+
+## Check and build
 
 ```sh
-npm run check                 # Astro and TypeScript validation
-npm test                      # Unit tests with mock Spotify responses
-npx tsc --noEmit              # Independent TypeScript validation
+npm run check
+npx tsc --noEmit
+npm test
 npx playwright install chromium --no-shell
-npm run test:browser          # Headless UI and responsive checks
-npm run build                 # Production build
-npm run preview               # Preview the default static build
+npm run test:browser
+npm run build
+npm run preview
 ```
 
-With Spotify disabled, production files are written to `dist/`. When enabled, the Vercel adapter produces `.vercel/output/` with static files and the Spotify function; use `npm run dev` for local API testing because the adapter does not support `astro preview`.
+Astro check includes Astro and TypeScript diagnostics; `tsc` also checks TypeScript independently. Unit tests use synthetic Spotify data. Browser tests exercise navigation, dialogs, Welcome, lightbox, polling lifecycle, responsive widths (375, 430, 768, 1280, 1440px), and reduced motion. Additional Spotify stress cases use narrower widths. Test-only fixtures are never registered by the production configuration. Mock tests do not verify your live Spotify authorization.
 
-## Customization
+## Deploy your copy
 
-Edit [src/data/site.ts](src/data/site.ts). This excerpt shows the main profile fields; edit the existing object and keep its remaining fields:
+With Spotify disabled, deploy `dist/` to any suitable static host after `npm run build`; `npm run preview` serves that output locally. No server function is needed.
 
-```ts
-export const site = {
-  name: 'Your Name',
-  subtitle: 'Example Full Name',
-  tagline: 'Nickname',
-  photo: '/images/avatar.svg',
-  photoFull: '',
-  photoAlt: 'Generic illustrated profile avatar',
-  quote: {
-    label: '~/example/notes',
-    text: 'Your quote goes here.',
-    footer: 'a work in progress',
-  },
-  // Keep the remaining information, music, seo, and contacts fields.
-};
-```
+For enabled Spotify, this configuration uses the [official Vercel adapter](https://docs.astro.build/en/guides/integrations-guide/vercel/). Import your own repository in Vercel, select Astro and `npm run build`, leave the output override unset, and add the three server secrets. The adapter produces `.vercel/output/`. A static-only host cannot run the live endpoint. Use `npm run dev` for local API testing; this adapter does not support `astro preview`.
 
-Edit `site.information` for your major, university, city, country, and interests. Set `site.music.tagline` for the decorative note and `site.seo` for the page title, description, and optional canonical URL.
+Set `site.seo.url` to your own deployed page URL for a canonical link. Custom subdirectory hosting also needs Astro's `base` configuration. Review profile content, sample projects, links, media permissions, and environment settings before publishing. Do not commit `.env.local` or `.vercel/`.
 
-To replace the avatar, place your image in `public/images/`, update `photo` and `photoAlt`, and optionally set `photoFull` for a larger lightbox image. URL paths omit `public/`. An empty `photoFull` reuses the thumbnail; missing images show a neutral fallback.
-
-Custom images are ignored by default. To commit an image you have permission to distribute, review its content and metadata and add a specific `.gitignore` exception, such as `!/public/images/my-profile.webp`. **Astro copies every file in `public/` to production, even if Git ignores it.** Remove unused private media from that directory before building. The template needs no audio files.
-
-Colors, typography, layout, and motion live in [src/styles/](src/styles/).
-
-## Social Links
-
-Edit the matching entry in `site.contacts`:
-
-| Platform | `platform` | Destination |
-| --- | --- | --- |
-| Instagram | `instagram` | Full HTTPS profile URL |
-| GitHub | `github` | Full HTTPS profile URL |
-| LinkedIn | `linkedin` | Full HTTPS profile URL |
-| Email | `email` | `mailto:hello@example.com` |
-
-Destinations default to `null`. Empty, missing, or unsafe URLs render disabled icons with a “Not configured” tooltip. Configured social links open in a new tab with `noopener noreferrer`; Email opens the visitor's mail app. Discord and LINE icons are also supported.
-
-## Spotify Now Playing — Optional
-
-The default `site.music.enabled: false` shows a polished **UNCONFIGURED** placeholder. It makes no Spotify requests, shows no fake track or LIVE badge, and needs no credentials.
-
-To opt in:
-
-1. Create your own Spotify Developer App and register `http://127.0.0.1:4387/callback` as its redirect URI.
-2. Copy [.env.example](.env.example) to ignored `.env.local` and fill in your own Client ID and Client Secret.
-3. Run `npm run spotify:authorize` and open the printed authorization URL yourself. The local helper requests only `user-read-currently-playing` and saves your refresh token directly to `.env.local` without printing it.
-4. Set `site.music.enabled` to `true`, restart development, and add all three secrets to your own Vercel project before rebuilding.
-
-Development Mode currently requires the app owner to have **Spotify Premium**. New apps are limited to one Client ID per developer and five authorized users; authorized accounts must be allowlisted. Existing apps may retain grandfathered limits. Check [Spotify's quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes) and [migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide) before setup.
-
-The Discord-like activity refreshes about every 30 seconds while the page is visible. Valid progress advances smoothly between confirmed snapshots and freezes when paused. The LIVE claim expires after 45 seconds without confirmation. Track details crossfade in 250ms; the LIVE dot pulses every 4.5 seconds. Reduced motion disables these animations.
-
-| State | Display |
-| --- | --- |
-| LIVE | Confirmed playback, real metadata/artwork, read-only progress, and Open in Spotify |
-| PAUSED | Confirmed track, muted yellow indicator, and frozen progress |
-| OFFLINE | “Not listening right now” / “probably building something.” |
-| UNAVAILABLE | “Spotify is taking a break.” / “please try again later.” |
-| UNCONFIGURED | Generic placeholder; no fake track, progress, or LIVE badge |
-
-Missing credentials stop polling after one configuration check until reload. A disabled widget makes no request. Artwork failures retain the generic music icon. This feature includes no playback controls, listening history, streaming, or playlist embedding.
-
-A 15-second server cache, request deduplication, and Vercel shared CDN caching reduce upstream calls across visitors. Hidden pages stop polling. Failures back off and respect Spotify `Retry-After`, including delays longer than five minutes. CDN caches are regional, so cold instances can still make additional upstream requests. The feature is near real-time polling, not instant push notifications.
-
-Spotify refresh tokens now expire after six months. For expired/revoked authorization or token rotation, rerun the helper, replace the Vercel secret, and redeploy. See [Spotify's expiration guidance](https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration) and the [setup and troubleshooting guide](docs/spotify-now-playing.md). Set `site.music.enabled` back to `false` and rebuild to disable the integration. To run without Spotify, leave it false, skip OAuth and environment setup, and use the standard installation/build commands. After adding credentials to an enabled deployment, reload the page to restart polling.
-
-Enabling this feature publishes your current track metadata to site visitors. Only authorize an account whose current listening information you intend to share.
-
-## Environment Variables
-
-All variables are optional while Spotify is disabled.
-
-| Variable | Purpose |
-| --- | --- |
-| `SPOTIFY_CLIENT_ID` | Your Spotify app's Client ID |
-| `SPOTIFY_CLIENT_SECRET` | Your app's server-only Client Secret |
-| `SPOTIFY_REFRESH_TOKEN` | Authorization for your own Spotify account |
-
-Use `.env.local` locally and your hosting provider's environment settings in production. Never commit secrets, put them in `site.ts`, prefix them with `PUBLIC_`, or expose them in browser code. The authorization helper is local only and is not deployed as a callback endpoint.
-
-## Deployment
-
-1. Create your own GitHub repository from this template or clone it into a separate repository.
-2. In Vercel, import that repository through the GitHub integration.
-3. Select the **Astro** framework preset and `npm run build`; use the repository root and a supported Node.js version satisfying `package.json`.
-4. For the default static template, use `dist` as the output directory. With Spotify enabled, leave Vercel's output override unset so the adapter's `.vercel/output/` is used, and add the three server environment variables.
-5. Deploy. Future pushes to the connected production branch trigger automatic deployments.
-
-Set `site.seo.url` to your deployed origin and rebuild for a canonical URL. Enabled Spotify requires a server-capable host; uploading only `dist/` does not provide the API. See [Astro's Vercel adapter documentation](https://docs.astro.build/en/guides/integrations-guide/vercel/).
-
-## Project Structure
+## Structure
 
 ```text
-src/
-  assets/fonts/       Self-hosted fonts
-  components/         Welcome, profile, lightbox, contacts, and music card
-  data/site.ts        Main customization entry point
-  layouts/            Document shell and metadata
-  lib/                Asset helpers and Spotify model/service
-  pages/index.astro   Prerendered homepage
-  pages/api/spotify/  Optional Now Playing endpoint
-  scripts/            Entry, parallax, lightbox, and music polling
-  styles/             Shared layout, palette, and animations
-public/
-  images/             Generic SVG avatar and favicon
-  fonts/licenses/     Original font license notices
+src/components/       Persistent shell, profile, tech stack, projects, dialogs, music
+src/data/             Typed editable site, tech stack, and project content
+src/layouts/          Document metadata, entry bootstrap, and shared styles
+src/lib/              Asset/link validation, motion timings, public/server Spotify
+src/pages/            Root page and optional Spotify endpoint
+src/scripts/          Scoped browser controllers and lifecycle cleanup
+src/styles/           Approved theme, responsive composition, and motion
+public/images/        Generic avatar, favicon, and example illustrations
 scripts/              Local Spotify authorization helper
-tests/                Unit tests and browser checks
-docs/                 Generic previews and Spotify setup guide
-.env.example          Empty optional environment configuration
+tests/                Unit tests, browser checks, test-only fixtures
+docs/                 Configuration guides and current generic previews
 ```
 
-## Accessibility
+## License and credits
 
-The welcome button and photo viewer support keyboard navigation. The native dialog supports Escape, backdrop dismissal, focus restoration, and scroll locking. Contact links have accessible labels, visible focus, and dismissible tooltips. Status changes are announced, artwork has text alternatives, and progress has an accessible value.
+No project-wide license has been selected. Choose a license before offering unrestricted reuse; third-party font/icon notices do not license the entire project. See [ATTRIBUTIONS.md](ATTRIBUTIONS.md). Spotify metadata/artwork remain subject to Spotify's terms.
 
-`prefers-reduced-motion` disables nonessential entrance, hover, parallax, and music animations. The main portfolio stays readable without JavaScript; the photo viewer and live updates require it.
-
-## License
-
-No project-wide license has been selected. A license decision is needed before offering this project for unrestricted reuse. Existing third-party notices apply to their respective assets and do not license the entire template.
-
-## Credits
-
-Font sources, icon credits, and retained licenses are listed in [ATTRIBUTIONS.md](ATTRIBUTIONS.md). The generic geometric avatar and favicon are included placeholders. Spotify metadata and artwork, when enabled, remain subject to Spotify's terms and attribution requirements.
+Dependency findings, their exposure assessment, and the audio build guard are documented in [the security review](docs/security.md).

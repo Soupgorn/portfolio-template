@@ -42,7 +42,7 @@ test('welcome, keyboard lightbox, safe empty socials, and disabled music', async
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(photo).toBeFocused();
-  expect(await page.locator('img[src]').evaluateAll(images => images.every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
+  await expect.poll(() => page.locator('img[src]:visible').evaluateAll(images => images.every(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0))).toBe(true);
   expect(errors).toEqual([]);
   expect(broken).toEqual([]);
   expect(musicRequests).toEqual([]);

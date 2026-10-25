@@ -8,12 +8,12 @@
     "check": "astro check",
     "test": "node --test tests/*.test.mjs",
     "test:browser": "playwright test",
-    "build": "astro build",
+    "build": "astro build && node scripts/check-build-assets.mjs",
     "preview": "astro preview",
     "spotify:authorize": "node --env-file-if-exists=.env.local scripts/authorize-spotify.mjs"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.19.0"
   },
   "dependencies": {
     "@astrojs/vercel": "^11.0.14",

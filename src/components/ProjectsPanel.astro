@@ -1,0 +1,15 @@
+---
+import ProjectGallery from './ProjectGallery.astro';
+import { site } from '../data/site';
+---
+<div class="projects-intro">
+  <p class="eyebrow">{site.projects.label}</p>
+  <h1 id="projects-heading">{site.projects.heading}</h1>
+  <p class="projects-subtitle">{site.projects.description}</p>
+</div>
+<ProjectGallery />
+<style>
+  .projects-intro { margin-bottom: 32px; }
+  h1 { margin: 12px 0 0; font-family: var(--font-display); font-size: clamp(36px, 6vw, 56px); font-weight: 600; line-height: 1.12; letter-spacing: -.04em; text-wrap: balance; }
+  .projects-subtitle { max-width: 48ch; margin: 16px 0 0; color: var(--color-muted); font-size: 15px; line-height: 1.75; }
+</style>

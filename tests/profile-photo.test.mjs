@@ -232,7 +232,12 @@ test('external close, interrupted animation, and page departure all release scro
   assert.equal(f.dialog.open, false);
   f.open();
   assert.equal(f.dialog.open, true);
-  f.fire(f.document, 'astro:before-swap');
+  f.fire(f.document, 'portfolio:before-change');
+  assert.equal(f.dialog.open, false);
+  // The persistent photo controller remains usable on return to Home.
+  f.open();
+  assert.equal(f.dialog.open, true);
+  f.fire(f.window, 'pagehide', { persisted: false });
   assert.equal(f.dialog.open, false);
   f.open();
   assert.equal(f.dialog.open, false);

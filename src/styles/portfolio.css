@@ -22,11 +22,13 @@
 .page-content { max-width: 480px; }
 .split-card {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "header" "profile" "contacts" "music" "details";
+  grid-template-areas: "header" "upper" "music" "contacts";
   gap: 24px;
   padding: 30px 26px;
 }
-.card-heading { grid-area: header; display: flex; align-items: center; justify-content: space-between; }
+.home-upper { grid-area: upper; display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 24px; min-width: 0; }
+.personal-column { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.card-heading { grid-area: header; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .card-heading > span { font-size: 11px; color: var(--color-red); }
 .profile {
   grid-area: profile;
@@ -50,6 +52,10 @@
 .contact-tagline { margin: 6px 0 0; font-size: 14px; font-weight: 500; line-height: 1.5; }
 .contact-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0; padding: 0; }
 .contact-item { position: relative; flex: 0 0 auto; }
+.contact-caption { display: none; }
+@media (hover: none), (max-width: 639px) {
+  .contact-caption { display: block; margin-top: 7px; color: var(--color-muted); font-size: 10px; line-height: 1.5; text-align: center; }
+}
 .contact-link { display: grid; place-items: center; width: 46px; height: 46px; min-height: 46px; padding: 0; border-radius: 12px; }
 .contact-tooltip {
   position: absolute;
@@ -122,16 +128,16 @@
 }
 @media (min-width: 900px) {
   .page-content { max-width: 824px; }
-  .split-card { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); grid-template-areas: "header header" "profile music" "details music" "contacts contacts"; grid-template-rows: auto auto 1fr auto; column-gap: 40px; padding: 32px 36px; }
+  .split-card { padding: 32px 36px; }
+  .home-upper:has(> .tech-stack) { grid-template-columns: minmax(0, 1.22fr) minmax(0, 1fr); gap: 32px; }
   .profile { grid-template-columns: 144px minmax(0, 1fr); grid-template-areas: "photo intro" "photo subtitle" "photo tagline"; align-items: start; }
   .profile-intro h1 { font-size: clamp(36px, 4vw, 42px); }
   .profile-subtitle { margin-top: 10px; text-align: left; font-size: 12px; }
   .tagline { text-align: left; font-size: 12px; }
-  .profile-details { align-self: center; }
+  .profile-details { align-self: stretch; }
   .contacts { flex-direction: row; justify-content: space-between; padding-top: 22px; }
   .contact-copy { text-align: left; }
-  .music { padding: 0; border-top: 0; }
-  .music::before { display: block; left: -20px; }
+  .music { padding-top: 24px; }
 }
 @media (max-width: 359px) {
   .split-card { padding: 28px 20px; }

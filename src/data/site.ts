@@ -19,13 +19,14 @@ export interface InfoCardData {
 /** Start here: customize your content, links, and local public/ asset paths. */
 export const site = {
   // Display name, full name, and nickname.
+  entryStorageKey: 'portfolio:entered',
   name: 'Your Name',
   subtitle: 'Example Full Name',
   tagline: 'Nickname',
   introLabel: 'Hello, I’m',
-  personalSpaceLabel: 'Personal Space',
+  personalSpaceLabel: '',
   contactLabel: 'Find me on',
-  contactTagline: 'Let’s connect ✦',
+  contactTagline: '',
   contactPendingNote: 'Contact links are coming soon.',
   photo: '/images/avatar.svg',
   /** Optional full-resolution photo in public/. Empty or missing = reuse photo. */
@@ -41,16 +42,19 @@ export const site = {
     { id: 'location', icon: 'pin', heading: 'Location', primary: 'Your City', secondary: 'Your Country' },
     { id: 'interests', icon: 'code', heading: 'Interests', badges: ['Interest One', 'Interest Two'] },
   ] satisfies InfoCardData[],
+  projects: {
+    label: 'Example work',
+    heading: 'Example projects.',
+    description: 'Fictional samples showing how to share your own work.',
+  },
   music: {
     // Opt in only after authorizing YOUR account. Secrets belong in .env.local.
     // false: static site, UNCONFIGURED placeholder, and no Spotify requests.
     enabled: false,
-    // Decorative music note; independent of Spotify configuration.
-    tagline: 'a little soundtrack to my space.',
   },
   seo: {
     title: 'Your Name — Portfolio',
-    description: 'A personal portfolio with profile details, contact links, and an optional music widget.',
+    description: 'A configurable portfolio with projects, technology badges, and optional Spotify activity.',
     /** Set your deployed origin, e.g. https://your-domain.tld, to enable a canonical URL. */
     url: '',
   },
