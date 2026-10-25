@@ -1,0 +1,41 @@
+---
+import ProfileCard from './ProfileCard.astro';
+import ProfileDetails from './ProfileDetails.astro';
+import MusicPlayer from './MusicPlayer.astro';
+import TechStack from './TechStack.astro';
+import ProjectsPanel from './ProjectsPanel.astro';
+import SiteNavigation from './SiteNavigation.astro';
+import ContactLinks from './ContactLinks.astro';
+import PageSignoff from './PageSignoff.astro';
+import AmbientBackground from './AmbientBackground.astro';
+import WelcomeScreen from './WelcomeScreen.astro';
+import { site } from '../data/site';
+---
+<main class="page-shell portfolio-page grid place-items-center">
+  <AmbientBackground />
+  <WelcomeScreen />
+  <div class="page-content" data-contact tabindex="-1" role="region" aria-label="Personal portfolio">
+    <div class="split-card portfolio-card" data-portfolio-shell data-panel-state="idle" data-projects-title={`Projects — ${site.name}`} data-projects-description={site.projects.description} data-home-title={site.seo.title} data-home-description={site.seo.description}>
+      <header class="card-heading"><p class="eyebrow">{site.personalSpaceLabel}</p><SiteNavigation /></header>
+      <div class="portfolio-viewport" data-panel-viewport>
+        <section id="home" class="portfolio-panel home-panel" data-portfolio-panel="home" aria-labelledby="profile-name">
+          <div class="home-upper">
+            <div class="personal-column"><ProfileCard /><ProfileDetails /></div>
+            <TechStack />
+          </div>
+          <MusicPlayer />
+        </section>
+        <section id="projects" class="portfolio-panel projects-panel" data-portfolio-panel="projects" aria-labelledby="projects-heading">
+          <ProjectsPanel />
+        </section>
+      </div>
+      <ContactLinks />
+    </div>
+    <PageSignoff />
+  </div>
+  <p class="sr-only" role="status" aria-live="polite" aria-atomic="true" data-panel-announcer></p>
+</main>
+<script>
+  import '../scripts/portfolio-panels';
+  import '../scripts/entry';
+</script>

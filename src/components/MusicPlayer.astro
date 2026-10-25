@@ -1,14 +1,12 @@
 ---
 import Icon from './Icon.astro';
 import { site } from '../data/site';
-const noteLines = site.music.tagline.match(/^(.*?)\s+(to .*)$/);
 ---
 <section class="music" aria-labelledby="music-heading" data-now-playing data-spotify-enabled={String(site.music.enabled)}>
   <h2 id="music-heading" class="music-heading eyebrow">On repeat</h2>
   <div class="music-container">
     <div class="live-card" data-live-card data-status={site.music.enabled ? 'unavailable' : 'unconfigured'}>
       <div class="live-topline">
-        <p class="eyebrow">Now playing</p>
         <span class="listening-status" data-status-label role="status"><span class="live-dot" aria-hidden="true"></span><span data-status-text>{site.music.enabled ? 'UNAVAILABLE' : 'UNCONFIGURED'}</span></span>
       </div>
       <div class="track-stage" data-track-stage>
@@ -31,26 +29,19 @@ const noteLines = site.music.tagline.match(/^(.*?)\s+(to .*)$/);
         <span class="spotify-wordmark"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="currentColor"/><path d="M5.2 9c4-1.2 9-1 13 1.1M6 12.1c3.5-1 7.9-.8 11.1 1M6.8 15.1c3-.8 6.3-.5 9.1 1" fill="none" stroke="#142C22" stroke-width="1.5" stroke-linecap="round"/></svg>Spotify</span>
         <a class="spotify-link" data-spotify-link hidden target="_blank" rel="noopener noreferrer">Open in Spotify <span aria-hidden="true">↗</span><span class="sr-only"> (opens in a new tab)</span></a>
       </div>
-      {site.music.enabled && <noscript><p class="live-noscript">Enable JavaScript to check listening status.</p></noscript>}
+      <noscript><p class="live-noscript">Enable JavaScript to check listening status.</p></noscript>
     </div>
   </div>
-  <aside class="music-note" aria-label="A music note">
-    <svg class="headphone-icon" xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M3 14v-3a9 9 0 0 1 18 0v3" /><rect x="3" y="12" width="4" height="8" rx="2" /><rect x="17" y="12" width="4" height="8" rx="2" />
-    </svg>
-    <p>{noteLines ? <>{noteLines[1]}<br />{noteLines[2]}</> : site.music.tagline}</p>
-    <div class="music-dots" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-  </aside>
 </section>
 <script>
   import { mountNowPlaying } from '../scripts/spotify-now-playing';
-  document.querySelectorAll<HTMLElement>('[data-now-playing]').forEach(mountNowPlaying);
+  const mount = () => document.querySelectorAll<HTMLElement>('[data-now-playing]').forEach(mountNowPlaying);
+  mount();
 </script>
 <style>
-  .music-container { padding: 10px; border: 1px solid var(--stroke-subtle); border-radius: 20px; background: var(--color-soft-green); margin-bottom: 20px; }
-  .live-card { padding: 22px 18px 12px; border: 1px solid #526c57; border-radius: 14px; background: #142C22; color: var(--color-cream); }
-  .live-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 22px; }
-  .live-topline .eyebrow { color: #bdcdbb; font-size: 9px; }
+  .music-container { padding: 10px; border: 1px solid var(--stroke-subtle); border-radius: 20px; background: var(--color-soft-green); }
+  .live-card { display: grid; padding: 22px 18px 12px; border: 1px solid #526c57; border-radius: 14px; background: #142C22; color: var(--color-cream); }
+  .live-topline { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 18px; }
   .listening-status { display: inline-flex; align-items: center; gap: 6px; font: 9px var(--font-label); letter-spacing: .06em; color: #bdcdbb; }
   .live-dot { width: 5px; height: 5px; flex-shrink: 0; border-radius: 50%; background: #bdcdbb; }
   .live-card[data-status="playing"] .listening-status { color: #bde8aa; }
@@ -60,7 +51,7 @@ const noteLines = site.music.tagline.match(/^(.*?)\s+(to .*)$/);
   .track-stage { display: grid; min-width: 0; }
   .track-stage > :global(.track-layer) { grid-area: 1 / 1; min-width: 0; text-align: center; }
   .artwork-frame { position: relative; display: grid; place-items: center; width: 120px; height: 120px; margin: 0 auto 20px; border: 1px solid #526c57; border-radius: 12px; overflow: hidden; background: #203c2e; color: #a6ba9d; }
-  .artwork-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
+  .artwork-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
   .track-copy { min-width: 0; }
   .track-copy h3 { margin: 0; font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
   .track-artist { margin: 8px 0 0; color: #c2d1bd; font-size: 19px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
@@ -76,22 +67,17 @@ const noteLines = site.music.tagline.match(/^(.*?)\s+(to .*)$/);
   .spotify-link:focus-visible { outline: 2px solid #b5d39c; outline-offset: 3px; border-radius: 4px; }
   .live-noscript { font-size: 10px; color: #c2d1bd; }
   @keyframes live-pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 #a8dc8b00; } 50% { opacity: .7; box-shadow: 0 0 0 3px #a8dc8b18; } }
-  .music-note { position: relative; isolation: isolate; overflow: hidden; padding: 26px; border: 1px solid var(--stroke-subtle); border-radius: 16px; background: var(--color-cream); transition: border-color 200ms ease; }
-  .music-note::before, .music-note::after { content: ""; position: absolute; z-index: -1; pointer-events: none; background: var(--color-soft-green); }
-  .music-note::before { width: 120px; height: 150px; right: -45px; top: -45px; border-radius: 50% 40% 60% 45%; transform: rotate(-25deg); opacity: .7; }
-  .music-note::after { width: 80px; height: 80px; right: 24px; bottom: -60px; border-radius: 50%; opacity: .5; }
-  .headphone-icon { color: var(--color-signature-green); }
-  .music-note p { max-width: 220px; margin: 14px 0 18px; font-family: var(--font-display); font-size: 22px; font-weight: 500; line-height: 1.35; letter-spacing: -.025em; overflow-wrap: anywhere; text-wrap: balance; }
-  .music-dots { display: flex; gap: 6px; }
-  .music-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--color-signature-green); }
-  .music-dots span:last-child { background: var(--color-red); }
-  :global(:root:is([data-entry="entered"], :not([data-entry]))) .music-dots { animation: music-dot-pulse 5s ease-in-out infinite; }
-  :global(:root[data-motion-paused]) .music-dots { animation-play-state: paused; }
   :global(.entry-reveal) .music { animation: music-fade-in 300ms ease-out 450ms both; }
   @keyframes music-fade-in { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes music-dot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .65; } }
-  @media (hover: hover) { .music-note:hover { border-color: var(--stroke-strong); } }
+  @media (min-width: 640px) {
+    .live-card { padding: 24px 24px 12px; }
+    .live-topline { grid-area: 1 / 1; align-self: start; justify-self: end; z-index: 1; margin: 8px 0 0; }
+    .track-stage { grid-area: 1 / 1; }
+    .track-stage > :global(.track-layer) { display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: start; gap: 24px; text-align: left; }
+    .artwork-frame { width: 128px; height: 128px; margin: 0; }
+    .track-copy { padding: 2px 88px 0 0; }
+  }
   @media (max-width: 639px) { .track-copy h3 { font-size: clamp(20px, 5vw, 22px); } .track-artist { font-size: clamp(16px, 4.5vw, 18px); } }
-  @media (max-width: 359px) { .music-container { padding: 6px; } .live-card { padding: 18px 12px 10px; } .artwork-frame { width: 105px; height: 105px; } }
-  @media (prefers-reduced-motion: reduce) { .music, .music-dots, .live-dot { animation: none !important; } .music-note, [data-progress-fill] { transition: none !important; } }
+  @media (max-width: 359px) { .music-container { padding: 6px; } .live-card { display: grid; padding: 18px 12px 10px; } .artwork-frame { width: 105px; height: 105px; } }
+  @media (prefers-reduced-motion: reduce) { .music, .live-dot { animation: none !important; } [data-progress-fill] { transition: none !important; } }
 </style>

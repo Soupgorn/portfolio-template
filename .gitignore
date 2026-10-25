@@ -38,3 +38,5 @@ Desktop.ini
 /public/images/*
 !/public/images/avatar.svg
 !/public/images/favicon.svg
+!/public/images/example-web.svg
+!/public/images/example-tool.svg

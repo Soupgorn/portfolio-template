@@ -1,0 +1,42 @@
+---
+import { techStack, type TechCategory } from '../data/techStack';
+
+interface Props { categories?: readonly TechCategory[] }
+const { categories = techStack } = Astro.props;
+const visibleCategories = categories.filter(category => category.technologies.length > 0);
+const paths = {
+  code: 'm7 7-5 5 5 5m10-10 5 5-5 5M14 4l-4 16',
+  window: 'M3 8h18M7 5h.01M10 5h.01M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Z',
+  terminal: 'm4 5 6 6-6 6m9 0h7',
+};
+---
+{visibleCategories.length > 0 && (
+  <section class="tech-stack" aria-labelledby="tech-stack-heading">
+    <h2 id="tech-stack-heading">Tech Stack</h2>
+    <div class="tech-grid">
+      {visibleCategories.map(category => (
+        <section class="tech-category" aria-labelledby={`tech-${category.id}`}>
+          <h3 id={`tech-${category.id}`}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d={paths[category.icon ?? 'code']} /></svg>
+            {category.title}
+          </h3>
+          <ul role="list">
+            {category.technologies.map(technology => <li>{technology}</li>)}
+          </ul>
+        </section>
+      ))}
+    </div>
+  </section>
+)}
+
+<style>
+  .tech-stack { min-width: 0; padding: 24px; border: 1px solid var(--stroke-subtle); border-radius: 16px; background: var(--color-soft-green); }
+  h2 { margin: 0 0 24px; color: var(--color-ink); font-family: var(--font-display); font-size: 26px; font-weight: 600; letter-spacing: -.03em; line-height: 1.25; }
+  .tech-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .tech-category { min-width: 0; }
+  .tech-category + .tech-category { padding-top: 20px; border-top: 1px solid var(--stroke-subtle); }
+  h3 { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--color-ink); font-family: var(--font-label); font-size: 12px; font-weight: 500; line-height: 1.6; overflow-wrap: anywhere; }
+  h3 svg { flex-shrink: 0; color: var(--color-signature-green); }
+  ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; }
+  li { max-width: 100%; padding: 5px 10px; border: 1px solid var(--stroke-subtle); border-radius: 999px; background: var(--color-cream); color: var(--color-ink); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+</style>

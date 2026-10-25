@@ -14,10 +14,11 @@ const data = () => ({ status: 'playing', track: { title: '<script>long title</sc
   artworkUrl: 'https://i.scdn.co/image/abc123', spotifyUrl: url }, progressMs: 12000, durationMs: 180000,
   fetchedAt: Date.now(), retryAfterSeconds: 30 });
 
-function setup(context, fetchMock, enabled = true) {
+function setup(context, fetchMock, enabled = true, initialPanel) {
   const component = readFileSync(new URL('../src/components/MusicPlayer.astro', import.meta.url), 'utf8');
   const html = component.slice(component.indexOf('<section'), component.indexOf('</section>') + 10).replace(/<Icon[^>]*\/>/g, '');
-  const dom = new JSDOM(html, { url: 'http://localhost', pretendToBeVisual: true });
+  const dom = new JSDOM(initialPanel ? `<section data-portfolio-panel="home">${html}</section>` : html, { url: 'http://localhost', pretendToBeVisual: true });
+  if (initialPanel) dom.window.document.documentElement.dataset.portfolioView = initialPanel;
   context.mock.method(globalThis, 'fetch', fetchMock);
   context.mock.timers.enable({ apis: ['setTimeout', 'setInterval', 'Date'], now: 1_000_000 });
   const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
@@ -63,6 +64,44 @@ test('failed artwork loads retain calm placeholder', async context => {
   await flush();
   h.get('[data-artwork]').dispatchEvent(new h.dom.window.Event('error'));
   assert.equal(h.get('[data-artwork]').hidden, true);
+});
+
+test('same-document route remount keeps fresh playback progress until revalidation', async context => {
+  let requests = 0;
+  const h = setup(context, async () => {
+    requests++;
+    return new Response(JSON.stringify({ ...data(), progressMs: requests === 1 ? 12000 : 14000 }));
+  });
+  const next = h.root.cloneNode(true);
+  await flush();
+  context.mock.timers.tick(2000);
+  h.cleanup();
+  h.root.replaceWith(next);
+  const cleanup = mountNowPlaying(next);
+  try {
+    assert.equal(next.querySelector('[data-status-text]').textContent, 'LIVE');
+    assert.equal(next.querySelector('[data-elapsed]').textContent, '0:14');
+    await flush();
+    assert.equal(next.querySelector('[data-elapsed]').textContent, '0:14');
+    context.mock.timers.tick(1000);
+    assert.equal(next.querySelector('[data-elapsed]').textContent, '0:15');
+    assert.equal(requests, 2);
+  } finally { cleanup(); }
+});
+
+test('expired route handoff cannot revive LIVE while the next response is pending', async context => {
+  let requests = 0;
+  const h = setup(context, async () => ++requests === 1 ? new Response(JSON.stringify(data())) : new Promise(() => {}));
+  const next = h.root.cloneNode(true);
+  await flush();
+  h.cleanup();
+  context.mock.timers.tick(46_000);
+  h.root.replaceWith(next);
+  const cleanup = mountNowPlaying(next);
+  try {
+    assert.notEqual(next.querySelector('[data-status-text]').textContent, 'LIVE');
+    assert.equal(next.querySelector('[data-progress]').hidden, true);
+  } finally { cleanup(); }
 });
 
 test('track changes retain old artwork until the new image loads, then remove the outgoing image', async context => {
@@ -270,4 +309,52 @@ test('mounting the same widget twice does not duplicate polling', async context 
   await flush();
   context.mock.timers.tick(30_000); await flush();
   assert.equal(calls, 2);
+});
+
+test('hidden Home suspends polling and resumes the same fresh track without resetting progress', async context => {
+  let requests = 0;
+  const h = setup(context, async () => ++requests === 1 ? new Response(JSON.stringify(data())) : new Promise(() => {}), true, 'home');
+  await flush();
+  const track = h.get('[data-track-layer]');
+  context.mock.timers.tick(1000);
+  h.dom.window.document.documentElement.dataset.portfolioView = 'projects';
+  h.dom.window.document.dispatchEvent(new h.dom.window.Event('portfolio:panel-change'));
+  context.mock.timers.tick(5000); await flush();
+  assert.equal(requests, 1);
+  h.dom.window.document.documentElement.dataset.portfolioView = 'home';
+  h.dom.window.document.dispatchEvent(new h.dom.window.Event('portfolio:panel-change'));
+  assert.equal(h.get('[data-status-text]').textContent, 'LIVE');
+  assert.equal(h.get('[data-elapsed]').textContent, '0:18');
+  assert.equal(h.get('[data-spotify-link]').href, url);
+  assert.strictEqual(h.get('[data-track-layer]'), track);
+  await flush();
+  assert.equal(requests, 2);
+});
+
+test('a stale hidden Home cannot revive LIVE while resume revalidation is pending', async context => {
+  let requests = 0;
+  const h = setup(context, async () => ++requests === 1 ? new Response(JSON.stringify(data())) : new Promise(() => {}), true, 'home');
+  await flush();
+  h.dom.window.document.documentElement.dataset.portfolioView = 'projects';
+  h.dom.window.document.dispatchEvent(new h.dom.window.Event('portfolio:panel-change'));
+  context.mock.timers.tick(46000); await flush();
+  assert.equal(requests, 1);
+  h.dom.window.document.documentElement.dataset.portfolioView = 'home';
+  h.dom.window.document.dispatchEvent(new h.dom.window.Event('portfolio:panel-change'));
+  assert.equal(h.get('[data-status-text]').textContent, 'UNAVAILABLE');
+  assert.equal(h.get('[data-progress]').hidden, true);
+  assert.equal(h.get('[data-spotify-link]').hidden, true);
+});
+
+test('direct Projects entry does not start hidden Home polling', async context => {
+  let requests = 0;
+  const h = setup(context, async () => { requests++; return new Response(JSON.stringify(data())); }, true, 'projects');
+  context.mock.timers.tick(60000); await flush();
+  assert.equal(requests, 0);
+  h.dom.window.document.documentElement.dataset.portfolioView = 'home';
+  h.dom.window.document.dispatchEvent(new h.dom.window.Event('portfolio:panel-change'));
+  await flush();
+  assert.equal(requests, 1);
+  assert.equal(h.get('[data-status-text]').textContent, 'LIVE');
+  assert.strictEqual(mountNowPlaying(h.root), h.cleanup);
 });

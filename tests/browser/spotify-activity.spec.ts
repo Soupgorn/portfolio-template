@@ -30,6 +30,8 @@ async function mockActivity(page: Page, state: string, longMetadata = false) {
 
 async function enter(page: Page) {
   await page.goto('/');
+  // Focus pauses the intentional idle breathe before Playwright's real click stability check.
+  await page.getByRole('button', { name: 'Enter my space' }).focus();
   await page.getByRole('button', { name: 'Enter my space' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-entry', 'entered');
 }
@@ -56,7 +58,7 @@ for (const state of ['playing', 'paused', 'offline', 'unavailable', 'unconfigure
       await expect(page.locator('[data-track-title]').last()).toHaveCSS('font-weight', '600');
       await expect(page.locator('[data-track-artist]').last()).toHaveCSS('font-size', '19px');
       await expect(page.locator('[data-track-artist]').last()).toHaveCSS('font-weight', '500');
-      await expect(page.locator('[data-track-artist]').last()).toHaveCSS('text-align', 'center');
+      await expect(page.locator('[data-track-artist]').last()).toHaveCSS('text-align', 'left');
       await expect(page.locator('[data-duration]')).toHaveText('3:00');
       const elapsed = await page.locator('[data-elapsed]').textContent();
       if (state === 'playing') {

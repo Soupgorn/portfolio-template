@@ -9,16 +9,29 @@ import '../styles/motion.css';
 // Foreground refinements load last without replacing the approved background styles.
 import '../styles/portfolio.css';
 import '../styles/card-interactions.css';
+import '../styles/portfolio-panels.css';
+
+interface Props { welcome?: boolean; title?: string; description?: string }
+const { welcome = false, title = site.seo.title, description = site.seo.description } = Astro.props;
+const canonical = site.seo.url;
 ---
 <!doctype html>
-<html lang="en">
+<html lang="en" data-portfolio-view="home" data-entry-storage-key={site.entryStorageKey}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script is:inline>
+    <script is:inline define:vars={{ welcome, entryStorageKey: site.entryStorageKey }}>
       // Hide only foreground content before first paint. Without JS, the page stays accessible.
       (() => {
         const root = document.documentElement;
+        // Remember entry for this tab; panels always start at Home on a fresh document.
+        let entered = false;
+        try { entered = sessionStorage.getItem(entryStorageKey) === 'true'; } catch {}
+        if (!welcome || entered) {
+          root.dataset.entry = 'entered';
+          try { sessionStorage.setItem(entryStorageKey, 'true'); } catch {}
+          return;
+        }
         root.dataset.entry = 'welcome';
         root.classList.add('entry-pending');
         // Fail open if the interaction module cannot load; never strand visitors at the gate.
@@ -34,16 +47,16 @@ import '../styles/card-interactions.css';
         document.addEventListener('entry:ready', () => window.clearTimeout(recovery), { once: true });
       })();
     </script>
-    <meta name="description" content={site.seo.description} />
+    <meta name="description" content={description} />
     <meta name="theme-color" content="#F8F4E8" />
     <link rel="preload" href={headingFont} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="preload" href={bodyFont} as="font" type="font/woff2" crossorigin="anonymous" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={site.seo.title} />
-    <meta property="og:description" content={site.seo.description} />
-    {site.seo.url && <link rel="canonical" href={site.seo.url} />}
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {canonical && <link rel="canonical" href={canonical} />}
     <link rel="icon" href={assetUrl('/images/favicon.svg')} type="image/svg+xml" />
-    <title>{site.seo.title}</title>
+    <title>{title}</title>
   </head>
   <body><slot /></body>
 </html>

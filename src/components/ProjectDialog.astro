@@ -1,0 +1,77 @@
+---
+import type { Project } from '../data/projects';
+import { projectImages, projectSourceUrl, projectUrl } from '../lib/projects';
+import ProjectImage from './ProjectImage.astro';
+import Icon from './Icon.astro';
+interface Props { project: Project; id: string }
+const { project, id } = Astro.props;
+const images = projectImages(project);
+const githubUrl = projectSourceUrl(project);
+const demoUrl = projectUrl(project.demoUrl);
+---
+<dialog class="project-dialog" id={id} aria-labelledby={`${id}-title`} data-project-dialog>
+  <header class="dialog-header">
+    <div>
+      {project.category && <p class="dialog-category">{project.category}</p>}
+      <h2 id={`${id}-title`}>{project.title}</h2>
+    </div>
+    <button type="button" class="dialog-close" data-project-close aria-label={`Close ${project.title} details`} autofocus>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+    </button>
+  </header>
+  <div class="dialog-content">
+    <div class="dialog-media">{images.length ? images.map(image => <ProjectImage image={image} />) : <ProjectImage compact />}</div>
+    <section aria-labelledby={`${id}-about`}>
+      <h3 id={`${id}-about`}>About the project</h3>
+      <p>{project.longDescription || project.description}</p>
+    </section>
+    {project.technologies.length > 0 && <section aria-labelledby={`${id}-tech`}>
+      <h3 id={`${id}-tech`}>Tech Stack</h3>
+      <ul class="detail-technologies" role="list">{project.technologies.map(technology => <li>{technology}</li>)}</ul>
+    </section>}
+    {project.features && project.features.length > 0 && <section aria-labelledby={`${id}-features`}>
+      <h3 id={`${id}-features`}>Key features</h3>
+      <ul class="detail-list">{project.features.map(feature => <li>{feature}</li>)}</ul>
+    </section>}
+    {project.challenges && project.challenges.length > 0 && <section aria-labelledby={`${id}-challenges`}>
+      <h3 id={`${id}-challenges`}>Challenges and lessons</h3>
+      <ul class="detail-list">{project.challenges.map(challenge => <li>{challenge}</li>)}</ul>
+    </section>}
+    {(githubUrl || demoUrl) && <footer class="detail-links">
+      {githubUrl && <a class="source-link" href={githubUrl} target="_blank" rel="noopener noreferrer"><Icon name="github" size={18} />View on GitHub<Icon name="arrow" size={16} /><span class="sr-only"> (opens in a new tab)</span></a>}
+      {demoUrl && <a class="demo-link" href={demoUrl} target="_blank" rel="noopener noreferrer">Live Demo<Icon name="arrow" size={16} /><span class="sr-only"> (opens in a new tab)</span></a>}
+    </footer>}
+  </div>
+</dialog>
+<style>
+  .project-dialog { position: fixed; inset: 0; width: min(760px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 32px); margin: auto; padding: 0; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--stroke-strong); border-radius: 24px; background: var(--color-cream); color: var(--color-ink); }
+  .project-dialog::backdrop { background: color-mix(in srgb, var(--color-ink) 65%, transparent); }
+  .project-dialog[open] { animation: project-dialog-in 250ms ease-out both; }
+  .project-dialog[open]::backdrop { animation: project-backdrop-in 250ms ease-out both; }
+  .project-dialog[data-closing] { animation: project-dialog-out 200ms ease-in both; }
+  .project-dialog[data-closing]::backdrop { animation: project-backdrop-out 200ms ease-in both; }
+  .dialog-header { position: sticky; top: 0; z-index: 2; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 24px; border-bottom: 1px solid var(--stroke-subtle); background: var(--color-cream); }
+  .dialog-header > div { min-width: 0; }
+  .dialog-category { margin: 0 0 8px; color: var(--color-signature-green); font: 11px/1.6 var(--font-label); overflow-wrap: anywhere; }
+  h2 { margin: 0; font-family: var(--font-display); font-size: clamp(26px, 5vw, 34px); font-weight: 600; letter-spacing: -.03em; line-height: 1.2; overflow-wrap: anywhere; }
+  .dialog-close { position: sticky; top: 24px; flex: 0 0 44px; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--stroke-subtle); border-radius: 12px; background: var(--surface-quiet); color: var(--color-ink); transition: background-color 200ms ease, border-color 200ms ease; }
+  .dialog-close:hover { border-color: var(--stroke-strong); background: var(--color-soft-green); }
+  .dialog-content { display: grid; gap: 28px; padding: 24px; }
+  .dialog-media { display: grid; gap: 16px; overflow: hidden; border-radius: 12px; }
+  h3 { margin: 0 0 12px; font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -.02em; line-height: 1.35; }
+  p, .detail-list { max-width: 70ch; margin: 0; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+  .detail-list { padding-left: 20px; }
+  .detail-list li + li { margin-top: 8px; }
+  .detail-technologies { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+  .detail-technologies li { max-width: 100%; padding: 6px 12px; border: 1px solid var(--stroke-subtle); border-radius: 999px; background: var(--color-soft-green); font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+  .detail-links { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-top: 20px; border-top: 1px solid var(--stroke-subtle); }
+  .detail-links a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 13px; font-weight: 600; }
+  .source-link { padding: 12px 18px; border-radius: 999px; background: var(--color-signature-green); color: var(--color-cream); text-decoration: none; transition: background-color 200ms ease; }
+  .source-link:hover { background: var(--color-ink); }
+  .demo-link { color: var(--color-ink); text-underline-offset: 5px; }
+  @keyframes project-dialog-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+  @keyframes project-dialog-out { to { opacity: 0; transform: scale(.97); } }
+  @keyframes project-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes project-backdrop-out { to { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .project-dialog, .project-dialog::backdrop { animation: none !important; } .dialog-close, .source-link { transition: none; } }
+</style>

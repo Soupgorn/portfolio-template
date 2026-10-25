@@ -1,0 +1,41 @@
+---
+// Test-only synthetic data. Never registered by the production Astro configuration.
+import Layout from '../../src/layouts/Layout.astro';
+import ProjectGallery from '../../src/components/ProjectGallery.astro';
+import TechStack from '../../src/components/TechStack.astro';
+import ProfileCard from '../../src/components/ProfileCard.astro';
+import ProfileDetails from '../../src/components/ProfileDetails.astro';
+import type { Project } from '../../src/data/projects';
+import type { TechCategory } from '../../src/data/techStack';
+const state = Astro.url.searchParams.get('state');
+const first: Project = {
+  slug: 'fixture-one', title: 'Fixture only: screenshot and links', description: 'Synthetic project for testing, not portfolio work.',
+  longDescription: state === 'long' ? 'Long development fixture description. '.repeat(100) : 'A detailed synthetic description for modal tests.',
+  technologies: state === 'long' ? Array.from({length: 20}, (_, index) => `Technology-${index}-` + 'LongName'.repeat(5)) : ['TypeScript', 'Astro'],
+  screenshot: {src:'/images/example-web.svg',alt:'Abstract test fixture cover',width:800,height:500},
+  githubUrl:'https://github.com/example/fixture', demoUrl:'https://example.com/',
+  features: ['Verified fixture behavior one', 'Verified fixture behavior two'],
+  challenges: ['Test-only documented lesson'],
+};
+const minimal: Project = {slug:'fixture-two',title:'Fixture only: minimal',description:'No screenshot or external links.',technologies:[]};
+const invalid: Project = {...minimal,slug:'invalid',screenshot:{src:'/images/does-not-exist.png',alt:'Missing',width:100,height:100},githubUrl:'https://example.com/unsafe' as Project['githubUrl'],demoUrl:'javascript:alert(1)' as Project['demoUrl']};
+const privateProject: Project = {...first,slug:'private',title:'Private test fixture',sourceVisibility:'private'};
+const entries = state === 'empty' ? [] : state === 'missing' ? [invalid] : state === 'private' ? [privateProject] : [first,minimal];
+const categories: readonly TechCategory[] = [
+  {id:'fixture-language',title:'Fixture languages',technologies:['TypeScript','LongTechnologyName'.repeat(5)]},
+  {id:'empty',title:'Empty category',technologies:[]},
+  {id:'fixture-web',title:'Fixture web',icon:'window',technologies:['Astro']},
+];
+---
+<Layout title="Development fixtures only">
+  <main class="page-shell grid place-items-center">
+    <div class="page-content">
+      <h1>Development fixtures only</h1>
+      {state === 'empty-tech' ? (
+        <div class="home-upper"><div class="personal-column"><ProfileCard /><ProfileDetails /></div><TechStack categories={[]} /></div>
+      ) : (
+        <><ProjectGallery entries={entries} /><TechStack categories={state === 'no-tech' ? [] : categories} /></>
+      )}
+    </div>
+  </main>
+</Layout>

@@ -1,49 +1,42 @@
 # Optional Spotify Now Playing
 
-Start with `site.music.enabled: false` in `src/data/site.ts`. This produces a static portfolio with a generic UNCONFIGURED card and no Spotify requests. All credentials belong to the person customizing the template.
+The default template uses `site.music.enabled: false`. It builds as static files with no credentials, reads no secrets, makes no browser Spotify requests, and displays UNCONFIGURED without artwork, progress, or a track link.
 
-## Create and authorize your app
+## Enable your own account
 
-1. Open the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), create your own app, and select Web API access.
-2. Register the exact redirect URI `http://127.0.0.1:4387/callback`. Spotify permits HTTP for explicit loopback IP addresses; `localhost` is not accepted. See [redirect URI requirements](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri).
-3. Check account eligibility and allowlist your account under the app's user settings. Development Mode requires the owner to maintain Spotify Premium, allows up to five authorized users for new apps, and limits new developers to one Client ID. Existing limits may be grandfathered. See [quota modes](https://developer.spotify.com/documentation/web-api/concepts/quota-modes) and [the 2026 migration guide](https://developer.spotify.com/documentation/web-api/tutorials/february-2026-migration-guide).
-4. Copy `.env.example` to `.env.local`. Add your app's Client ID and Client Secret; leave the Refresh Token empty initially.
-5. Run `npm run spotify:authorize` from the project root. Open its printed Spotify authorization URL in your own browser and authorize your own account within five minutes.
-6. The helper binds only to `127.0.0.1:4387`, verifies OAuth state, uses an S256 PKCE challenge, exchanges the code locally, and saves the refresh token to ignored `.env.local`. It does not print tokens or deploy a public OAuth callback. Keep that file private; file permissions depend on your operating system.
-7. Set `site.music.enabled` to `true`, restart `npm run dev`, and start a track in your Spotify app. The card reads listening status; it never starts playback.
+1. Create an app in the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard). Check the current [quota/account requirements](https://developer.spotify.com/documentation/web-api/concepts/quota-modes); visitors never authorize this app.
+2. Register exactly `http://127.0.0.1:4387/callback` as a redirect URI. Use the explicit loopback address. See [Spotify redirect requirements](https://developer.spotify.com/documentation/web-api/concepts/redirect_uri).
+3. Copy `.env.example` to ignored `.env.local`; fill your own `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET`.
+4. Run `npm run spotify:authorize`, open the printed link yourself, and authorize your account. The local helper uses the [Authorization Code flow](https://developer.spotify.com/documentation/web-api/tutorials/code-flow), PKCE, and validated random state. It requests only `user-read-currently-playing`, listens on the loopback address, and expires after five minutes.
+5. The helper writes `SPOTIFY_REFRESH_TOKEN` to ignored `.env.local` without printing it. Set `site.music.enabled: true` and restart development.
+6. On your own Vercel project, add all three server environment values and rebuild. Enabled mode selects server output and the Vercel adapter; the root homepage remains prerendered. Use the adapter output, not a static-only upload.
 
-The only requested permission is [`user-read-currently-playing`](https://developer.spotify.com/documentation/web-api/reference/get-the-users-currently-playing-track). No email, profile, history, playlist, or playback-control permissions are requested. The helper follows [Authorization Code](https://developer.spotify.com/documentation/web-api/tutorials/code-flow) with PKCE protection; do not use third-party token generators or paste credentials into issues, chat, screenshots, or terminal commands.
+Never put secrets in site data, `PUBLIC_` variables, client JavaScript, source control, logs, or screenshots. Only authorize listening activity you intend to publish. This site exposes a sanitized current-track snapshot; it cannot control playback.
 
-## Production
-
-Add `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, and `SPOTIFY_REFRESH_TOKEN` to your own Vercel project's environment settings, selecting the environments where the widget should run. Rebuild after enabling it. The homepage remains prerendered; `/api/spotify/now-playing` becomes an on-demand Vercel function. Use the Astro preset and leave the output-directory override unset in enabled mode.
-
-Only sanitized track title, artists, album, artwork URL, Spotify track link, status, and progress reach visitors. Tokens, device information, raw API errors, and user account fields stay server-side. Your current listening metadata becomes public when enabled. The integration uses a 15-second shared cache and request deduplication to limit upstream calls.
-
-The default disabled mode builds to `dist/` and works with `npm run preview`. Enabled Vercel builds use `.vercel/output/`; test the API locally with `npm run dev` because `astro preview` is unsupported by this adapter. No production project is created by this repository's scripts.
-
-Use Vercel's Git-based build for deployment. Local server bundles can contain Astro's build-directory metadata and machine environment paths; keep `dist/` and `.vercel/` ignored and never publish those server bundles as static assets. The public HTML and browser assets must be reviewed separately from server-only output.
-
-## Status and recovery
+## States and lifecycle
 
 | State | Behavior |
 | --- | --- |
-| Disabled | Generic UNCONFIGURED card; no polling, secret reads, or Spotify calls |
-| Playing | LIVE, current artwork and track link; progress only for valid API values |
-| Paused | PAUSED; paused metadata can remain and progress freezes |
-| No playback / private session | OFFLINE placeholder without track metadata |
-| Missing credentials | UNCONFIGURED; no fake track, polling stops until reload |
-| Authorization / network errors | UNAVAILABLE; no fake LIVE indicator |
-| Unsupported local track or episode | UNAVAILABLE instead of invented track data |
+| LIVE | Confirmed playback with real title, artists, artwork/link, and approximate progress |
+| PAUSED | Confirmed track, with frozen progress |
+| OFFLINE | No active item; no track or progress |
+| UNAVAILABLE | Sanitized failure or stale/unsupported data; no fake activity |
+| UNCONFIGURED | Disabled or missing credentials; no repeated polling |
 
-The browser polls about every 30 seconds while visible, pauses polling when hidden, honors `Retry-After`, and backs off after failures. Snapshots expire after 45 seconds, so stale results cannot retain LIVE. Artwork load failures show the existing music icon. Progress is approximate between API snapshots and reconciles on each response.
+The enabled browser polls about every 30 seconds while Home and the document are visible. A snapshot older than 45 seconds cannot claim LIVE. Progress interpolates only valid confirmed playback values. Hidden Home/document cancels requests and progress timers. Resume preserves fresh metadata and retry deadlines. Disabled pages never poll; enabled missing-credential pages stop after one configuration check until reload.
 
-Access tokens refresh server-side. A failed authorization, missing scope, expired refresh token, or changed refresh token fails closed, avoiding repeated authorization requests in the same server instance. Reauthorize with `npm run spotify:authorize`, update the hosting secrets, and restart/redeploy. Spotify [expires refresh tokens after six months](https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration); access-token refresh does not extend that lifetime. The helper replaces the old local refresh-token entry. The service does not persist rotated tokens automatically, so rotation also requires updating the durable secret.
+The server uses a 15-second sanitized snapshot cache with single-flight requests per warm instance. CDN caching receives only the remaining snapshot lifetime. It does not cache raw account responses or credentials. Failures back off and respect `Retry-After`, including long rate-limit delays. Cold instances and regions can still make independent upstream requests.
 
-For 403 errors, check Premium eligibility, app allowlisting, and the granted scope. For rate limits, let the retry period pass. For missing artwork, keep the placeholder rather than adding copyrighted artwork to the repository. For 401 or `invalid_grant`, reauthorize; do not repeatedly retry expired credentials. See [Spotify's refreshing-token guide](https://developer.spotify.com/documentation/web-api/tutorials/refreshing-tokens).
+## Troubleshooting and renewal
 
-To disable, set `enabled: false`, rebuild, and remove the production secrets if no longer needed. Do not add personal playlists, listening-history fixtures, access tokens, or audio files to the template.
+- UNCONFIGURED: either keep Spotify intentionally disabled, or set the flag and all three server values, restart/rebuild, then reload.
+- UNAVAILABLE: check your app's account access, scopes, authorization, rate limits, and hosting configuration without logging credentials. Unsupported/private playback and malformed responses fail closed.
+- Expired or revoked authorization: rerun the helper, replace the host's secret, and rebuild. Check Spotify's current token policy rather than assuming authorization lasts indefinitely.
+- A replacement refresh token returned by Spotify fails closed; this implementation does not pretend serverless memory is durable secret storage. Reauthorize and update the configured value.
+- Disable: set `site.music.enabled: false` and rebuild. No environment setup or OAuth is needed in this mode.
 
-## Verification
+## Verify
 
-Run `npm run check`, `npx tsc --noEmit`, `npm test`, `npm run test:browser`, and `npm run build`. Tests use fabricated Spotify metadata and mocked HTTP responses; passing tests does not establish that your account is authorized. Verify your own account separately after setup, then inspect both source and production output before publishing.
+Run the README checks and production build with no credentials for the default mode. Unit/browser tests use synthetic Spotify responses for states, safe URLs, stale snapshots, interpolation, caching, retries, and timer cleanup. They do not prove live authorization.
+
+After enabling your own credentials, manually play/pause a track and inspect its real artwork/link and progress. See the [Vercel adapter guide](https://docs.astro.build/en/guides/integrations-guide/vercel/) for server deployment. `astro preview` is for the default static output; use development or an appropriate server preview for enabled mode.

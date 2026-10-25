@@ -1,0 +1,14 @@
+<nav class="site-navigation" aria-label="Main navigation">
+  <button type="button" data-panel-link="home" aria-controls="home" aria-current="page">Home</button>
+  <button type="button" data-panel-link="projects" aria-controls="projects">Projects</button>
+  <button type="button" data-panel-link="contact" aria-controls="contact">Contact</button>
+</nav>
+
+<style>
+  .site-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; max-width: 100%; }
+  button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 12px; border: 0; border-radius: 10px; background: transparent; color: var(--color-muted); font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer; text-decoration: none; text-underline-offset: 5px; transition: background-color 220ms ease, color 220ms ease, text-decoration-color 220ms ease; }
+  button[aria-current] { color: var(--color-ink); background: var(--surface-quiet); text-decoration: underline; text-decoration-color: var(--color-signature-green); }
+  @media (hover: hover) { button:hover { color: var(--color-ink); background: var(--color-soft-green); } }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+  @media (max-width: 359px) { button { padding-inline: 9px; } }
+</style>
