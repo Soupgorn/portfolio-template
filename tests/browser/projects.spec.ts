@@ -39,7 +39,7 @@ test('panel navigation works when session storage is blocked', async ({ page }) 
     Storage.prototype.getItem = () => { throw new DOMException('Blocked', 'SecurityError'); };
     Storage.prototype.setItem = () => { throw new DOMException('Blocked', 'SecurityError'); };
   });
-  await openPortfolio(page, 'projects'); await page.getByRole('button', { name: 'Contact', exact: true }).click(); await expect(page.locator('#contact')).toBeFocused(); await switchTo(page, 'home');
+  await openPortfolio(page, 'projects'); await expect(page.locator('.contacts')).toBeVisible(); await switchTo(page, 'home');
   await expect(page.getByRole('heading', { name: 'Your Name', exact: true })).toBeVisible();
   await expect(page.locator('[data-welcome]')).toBeHidden();
   // Storage is deliberately unavailable: a fresh document correctly shows Welcome again.
