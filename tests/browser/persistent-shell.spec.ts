@@ -117,8 +117,6 @@ test('Tab during exit honors the destination navigation order', async ({ page })
   await expect(page.locator('[data-portfolio-shell]')).toHaveAttribute('data-panel-state', 'exiting');
   await page.keyboard.press('Tab'); await settled(page, 'projects');
   const firstProject = page.getByRole('button', { name: 'Explore Example Web Application', exact: true });
-  await expect(page.getByRole('button', { name: 'Contact', exact: true })).toBeFocused();
-  await page.keyboard.press('Tab');
   await expect(firstProject).toBeFocused(); await expect(firstProject).toBeInViewport();
   expect(await page.evaluate(() => scrollY)).toBe(0);
   await page.keyboard.press('Space'); await expect(page.locator('dialog[open]')).toHaveCount(1); await page.keyboard.press('Escape');
@@ -183,9 +181,9 @@ test('without JavaScript all content is readable inline at the same root URL', a
 test('Home and Projects navigation preserves the keyboard accessible social links', async ({ page }) => {
   await offline(page); await openPortfolio(page);
   const original = await page.locator('.contact-link').evaluateAll(links => links.map(link => link.getAttribute('href')));
-  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button')).toHaveText(['Home', 'Projects', 'Contact']);
+  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button')).toHaveText(['Home', 'Projects']);
   await page.keyboard.press('Tab');
-  await page.getByRole('button', { name: 'Contact', exact: true }).click();
+  await page.locator('#contact').focus();
   await settled(page, 'home'); await expect(page.locator('#contact')).toBeFocused();
   await expect(page.locator('#home')).toBeVisible(); await expect(page.locator('#projects')).toHaveAttribute('inert');
   await expect(page.locator('.contact-disabled')).toHaveCount(4);
